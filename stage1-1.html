@@ -1,0 +1,2071 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+   
+  <meta charset="UTF-8">
+   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;600;700;800&display=swap" rel="stylesheet">
+   <script src="game-core.js"></script>
+  <style>
+    @font-face {
+      font-family: "Yekan";
+      src: local("Yekan"), local("IRYekan");
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: Yekan, sans-serif;
+      background: #071016 url("background7.png") center/cover fixed no-repeat;
+      color: #fff;
+      overflow: hidden;
+    }
+
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at top, rgba(255,255,255,0.05), rgba(0,0,0,0.8));
+      z-index: 0;
+    }
+
+    .scene {
+      position: relative;
+      z-index: 1;
+      width: 100vw;
+      height: 100vh;
+      padding: 16px 22px 90px; /* پایین کمی جا برای پنل آریا */
+      display: flex;
+      flex-direction: column;
+    }
+
+    .top-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+  
+
+    /* بخش اصلی */
+/* بخش اصلی */
+.main{
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+
+  /* ✅ مهم: دوباره دو ستونه کن */
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  align-items: stretch;
+}
+
+/* ✅ در موبایل تک‌ستونه */
+@media (max-width: 900px) {
+  .main {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
+  }
+}
+
+    /* سطل و کارت زباله */
+    /* ✅ ظرف سطل باید مرجع absolute باشد */
+.trash-area{
+  position: relative;
+  z-index: 20;
+  height: 100%;
+  display: block;          /* ⬅️ فلکس را بردار */
+  padding-bottom: 40px;
+}
+
+   /* ✅ خود تصویر سطل پایین‌تر از کارت باشد */
+.trash-image{
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 40px;
+  width: 190px;
+  z-index: 40;
+}
+
+    .trash-image img {
+      width: 100%;
+      display: block;
+      filter: drop-shadow(0 12px 20px rgba(0,0,0,0.8));
+    }
+
+    /* ناحیه دراپ سطل برای غیرکمپوستی‌ها */
+    .trash-hit {
+      position: absolute;
+      inset: 18% 12% 5% 12%;
+      border-radius: 40% 40% 12% 12%;
+      pointer-events: auto;
+    }
+
+.card-stack{
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 260px;           /* فاصله از سطل (در صورت نیاز کم/زیاد کن) */
+  height: 240px;
+  pointer-events: none;    /* خود ظرف رو غیرقابل کلیک کن */
+  z-index: 60;
+  margin: 0;
+  /* برای دیباگ موقت:
+  outline: 2px dashed red; background: rgba(255,0,0,0.08);
+  */
+}
+
+
+    /* کارت‌ها مثل ورق بازی */
+   .trash-card{
+  pointer-events: auto;    /* کارت قابل کلیک/درگ */
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 400px;
+  transform: translateX(-50%) rotate(var(--rot, 0deg));
+  z-index: 61;
+     border-radius: 18px;
+     padding: 4px 14px;
+     background: rgba(0,0,0,0.78);
+      border: 1px solid rgba(255,255,255,0.08);
+      box-shadow: 0 16px 28px rgba(0,0,0,1);
+}
+/* Canvas گیاه: به جای top:20%، از bottom استفاده کن تا بالا نرود */
+#canvas_container_div{
+  position: absolute;
+  left: 50%;
+  bottom: 110px;         /* فاصله از پنل آریا */
+  transform: translateX(-50%);
+  width: 380px;
+  height: 380px;
+  pointer-events: none;
+  z-index: 5;
+}
+    .trash-card.dragging {
+      cursor: grabbing;
+      transform: translateX(-50%) rotate(var(--rot, 0deg)) scale(1.07);
+      box-shadow: 0 26px 40px rgba(0,0,0,1);
+      background: rgba(0,0,0,0.95);
+      z-index: 30;
+    }
+
+    .trash-card.bounce-back {
+      animation: bounceBack 0.4s ease-out;
+    }
+
+    @keyframes bounceBack {
+      0% { transform: translateX(-50%) scale(1.05); }
+      40% { transform: translateX(calc(-50% - 10px)) translateY(-10px) scale(1.05); }
+      100% { transform: translateX(-50%) scale(1); }
+    }
+
+    .trash-main { display: flex; flex-direction: column; gap: 4px; }
+    .trash-label { font-size: 15px; }
+    .trash-sub { font-size: 11px; opacity: 0.8; }
+    .trash-emoji {
+      width: 100px;
+      height: 100px;
+      border-radius: 14px;
+      background: rgba(255,255,255,0.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 30px;
+      overflow: hidden;
+    }
+    .trash-emoji img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    /* ناحیه دراپ روی درخت */
+    .tree-hit {
+      position: absolute;
+      bottom: 40px;
+      width: 70%;
+      height: 70%;
+      border-radius: 50% 50% 35% 35%;
+      transform: translateY(5px);
+      pointer-events: auto;
+    }
+
+    /* امتیاز شناور */
+    .floating-score {
+      position: absolute;
+      font-size: 18px;
+      font-weight: bold;
+      color: #b8ff6a;
+      text-shadow: 0 0 8px rgba(0,0,0,0.9);
+      opacity: 0;
+      pointer-events: none;
+    }
+    .floating-score.show { animation: floatUp 0.8s ease-out; }
+    @keyframes floatUp {
+      0% { opacity: 0; transform: translateY(0); }
+      20% { opacity: 1; transform: translateY(-6px); }
+      100% { opacity: 0; transform: translateY(-32px); }
+    }
+
+    /* پنل گفت‌وگو کوچک و پایین صفحه */
+    .aria-panel {
+      position: absolute;
+      left: 22px;
+      right: 22px;
+      bottom: 16px;
+      margin: 0 auto;
+      background: rgba(0,0,0,0.55);
+      border-radius: 18px;
+      padding: 8px 12px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 -10px 24px rgba(0,0,0,0.9);
+      font-size: 22px;
+      line-height: 1.6;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      z-index: 40;
+    }
+
+    .aria-panel.aria-flash {
+      animation: ariaFlash 0.6s ease-out;
+    }
+
+    @keyframes ariaFlash {
+      0% { box-shadow:0 -10px 24px rgba(160,255,130,0.0); transform:translateY(0); }
+      50%{ box-shadow:0 -10px 32px rgba(160,255,130,0.7); transform:translateY(-2px); }
+      100%{ box-shadow:0 -10px 24px rgba(160,255,130,0.0); transform:translateY(0); }
+    }
+
+    .aria-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      overflow: hidden;
+      background: radial-gradient(circle at 30% 20%, #ffe6c2, #f5a05f);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+      box-shadow: 0 0 10px rgba(0,0,0,0.8);
+    }
+
+    .aria-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .aria-bubble {
+      position: relative;
+      background: rgba(0,0,0,0.75);
+      border-radius: 18px;
+      padding: 8px 10px;
+      border: 1px solid rgba(255,255,255,0.08);
+      flex: 1;
+    }
+
+    .aria-bubble::before {
+      content: "";
+      position: absolute;
+      top: 14px;
+      right: -8px;
+      border-width: 6px 0 6px 8px;
+      border-style: solid;
+      border-color: transparent transparent transparent rgba(0,0,0,0.75);
+    }
+
+    .aria-name {
+      font-size: 11px;
+      opacity: 0.8;
+      margin-bottom: 3px;
+      color: #b8ff7d;
+    }
+
+   .aria-text {
+  font-family: "Nunito", sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.9;
+  color: #ffffff;
+}
+
+    .aria-text span.good { color: #b8ff7d; }
+    .aria-text span.bad  { color: #ffb5b5; }
+
+    /* پنجره پایان سناریو */
+    .end-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.75);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+    }
+
+    .end-modal {
+      background: rgba(0,0,0,0.9);
+      border-radius: 22px;
+      padding: 18px 22px;
+      width: min(420px, 90vw);
+      backdrop-filter: blur(16px);
+      box-shadow: 0 22px 40px rgba(0,0,0,1);
+      text-align: center;
+      animation: modalIn 0.45s ease-out;
+    }
+
+    @keyframes modalIn {
+      from { opacity: 0; transform: translateY(18px) scale(0.9); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .end-title { font-size: 20px; margin-bottom: 8px; }
+    .end-text { font-size: 14px; line-height: 1.8; margin-bottom: 16px; opacity: 0.95; }
+
+    .end-actions {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      border-radius: 999px;
+      border: none;
+      padding: 9px 18px;
+      font-size: 14px;
+      cursor: pointer;
+      box-shadow: 0 12px 22px rgba(0,0,0,0.9);
+      transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg,#b8ff6a,#46ff8f);
+      color: #072313;
+    }
+    .btn-secondary {
+      background: rgba(255,255,255,0.06);
+      color: #fff;
+    }
+    .btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 16px 28px rgba(0,0,0,1);
+    }
+    .btn:active {
+      transform: translateY(1px);
+      box-shadow: 0 7px 14px rgba(0,0,0,0.85);
+    }
+
+    @media (max-width: 700px) {
+      .top-title { font-size: 16px; }
+      .trash-card { width: 210px; }
+    }
+
+#canvas {
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  pointer-events: none;
+}
+.tree-area{
+  position: relative;
+  z-index: 5;
+  min-height: 520px;
+  height: 100%;
+}
+
+/* Canvas گیاه */
+#canvas_container_div{
+  position: absolute;
+  left: 50%;
+  top: 35%;
+  transform: translate(-50%, -50%);
+  width: min(380px, 80vw);
+  height: min(380px, 80vw);
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* ⭐ Stars 10 */
+.stars-box{
+  position: fixed;
+  top: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 6px;
+  z-index: 60;
+}
+.star{
+  width: 26px;
+  height: 26px;
+  background: url("star-off.png") center/contain no-repeat;
+  opacity: 0.45;
+  transition: opacity 0.25s, transform 0.25s;
+}
+.star.active{
+  background: url("star-on.png") center/contain no-repeat;
+  opacity: 1;
+  transform: scale(1.22);
+  filter: drop-shadow(0 0 6px #ffeb3b);
+}
+
+/* ⏳ Timer (مثل قبلی) */
+.timer-box{
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  transform: none;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 20px;
+  background: #020617cc;
+  border-radius: 20px;
+  border: 1px solid #334155;
+  box-shadow: 0 8px 30px #000a;
+  z-index: 60;
+}
+.hourglass{ font-size: 34px; animation: flip 2s infinite linear; }
+.time-text{
+  font-family: "Nunito", sans-serif;
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #fff;
+}
+.timer-warning .time-text{ color: #ef4444; }
+@keyframes flip{
+  0%{ transform: rotate(0deg); }
+  50%{ transform: rotate(180deg); }
+  100%{ transform: rotate(360deg); }
+}
+
+ .top-bar {
+      position: fixed;      /* ⬅️ خارج از جریان */
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 70;
+    font-size: 22px;
+    font-weight: bold;
+    text-align: center;
+     color: #ffffff
+  }
+
+  </style>
+</head>
+<body>
+  <div class="top-bar"> احیای گیاه پسماند</div>
+<!-- ⭐ Stars (10) -->
+<div class="stars-box" id="starsBox">
+  <div class="star"></div><div class="star"></div><div class="star"></div><div class="star"></div><div class="star"></div>
+  <div class="star"></div><div class="star"></div><div class="star"></div><div class="star"></div><div class="star"></div>
+</div>
+
+<!-- ⏳ Timer -->
+<div class="timer-box" id="timerBox">
+  <span class="hourglass">⏳</span>
+  <span class="time-text" id="timeText">01:00</span>
+</div>
+
+<div class="overlay"></div>
+<div class="scene">
+
+  <!-- نوار بالا -->
+  <div class="top-bar">
+    <div class="top-left">
+      <div class="top-title">
+        <span class="icon"></span>
+      </div>
+
+        
+        <div class="hint-popup" id="hintPopup">
+        </div>
+      </button>
+    </div>
+
+    <div class="hud">
+      <div class="hud-item">
+        <div class="hud-label"></div>
+      </div>
+
+      <div class="hud-item">
+        <div class="hud-label"></div>
+        <div class="progress-bar">
+          <div class="progress-fill" id="treeProgress"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- بخش اصلی -->
+  <!-- بخش اصلی -->
+<div class="main">
+
+  <!-- سطل و کارت زباله -->
+  <div class="trash-area">
+    <div class="card-stack" id="cardStack"></div>
+
+    <div class="trash-image">
+      <img src="garbage1.png" alt="تلنبار زباله">
+      <div class="trash-hit" id="trashHit"></div>
+    </div>
+  </div>
+
+  <!-- ناحیه درخت -->
+  <div class="tree-area" id="treeArea">
+
+    <!-- Canvas گیاه -->
+    <div id="canvas_container_div">
+      <canvas id="canvas" width="1000" height="1000"></canvas>
+    </div>
+
+    <div class="tree-glow" id="treeGlow"></div>
+    <div class="tree-hit" id="treeHit"></div>
+
+    <div class="tree-fruit fruit-left"></div>
+    <div class="tree-fruit fruit-right"></div>
+    <div class="tree-fruit fruit-top"></div>
+
+    <div class="floating-score" id="floatScore">+10</div>
+  </div>
+
+</div>
+
+  <!-- پنل گفت‌وگو با آریا (پایین صفحه) -->
+  <div class="aria-panel">
+    <div class="aria-avatar">
+      <!-- اینجا عکس PNG آریا را قرار بده -->
+    <img src="aria.png" alt="">
+
+    </div>
+    <div class="aria-bubble">
+      <div class="aria-name">آریا – راهنمای پردیس سبز</div>
+      <div class="aria-text" id="ariaText">
+        این گیاه قلب پردیسه. <span class="good"></span>
+        هر آیتمی را خوب نگاه کن و بعد تصمیم بگیر که روی گیاه رهایش کنی یا به سطل زباله بسپاری.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- پنجره پایان سناریو -->
+<div class="end-backdrop" id="endBackdrop">
+  <div class="end-modal">
+    <div class="end-title" id="endTitle">آفرین!</div>
+    <div class="end-text" id="endText">
+      درخت پردیس جان گرفته و حالا می‌توانی به سناریوی بعدی بروی.
+    </div>
+    <div class="end-actions">
+    <div class="end-text" id="endText"></div>
+    <button class="btn btn-primary" id="btnNext">مرحله بعدی</button>
+    </div>
+  </div>
+</div>
+
+<!-- صداها (اختیاری) -->
+<audio id="sCorrect" src="correct.mp3" preload="auto"></audio>
+<audio id="sWrong"   src="wrong.mp3"   preload="auto"></audio>
+<audio id="sSuccess" src="success.mp3" preload="auto"></audio>
+
+<script>
+  ensureSession();
+  // ---------- داده‌ی آیتم‌ها ----------
+  const items = [
+    // کمپوستی‌ها
+    { name:"پوست موز", emoji:"🍌", img:"banana.png", compost:true,
+       },
+    { name:"برگ درخت", emoji:"🍃", img:"leaf.png", compost:true,
+      },
+    { name:"سبزیجات مانده", emoji:"🥬", img:"vegetable.png", compost:true,
+      },
+    { name:"تفاله چای", emoji:"☕", img:"tea.png", compost:true,
+      },
+    { name:"تفاله قهوه", emoji:"☕", img:"coffee.png", compost:true,
+      },
+    { name:"نان خشک", emoji:"🍞", img:"bread.png", compost:true,
+      },
+    { name:"پوست سیب", emoji:"🍎", img:"apple.png", compost:true,
+      },
+    { name:"میوه له‌شده", emoji:"🍐", img:"fruts.png", compost:true,
+      },
+    { name:"پوست سیب‌زمینی", emoji:"🥔", img:"potato.png", compost:true,
+       },
+    { name:"پوست پرتقال", emoji:"🍊", img:"orange.png", compost:true,
+      },
+    { name:"پوست تخم‌مرغ خرد شده", emoji:"🥚", img:"egg.png", compost:true,
+       },
+    { name:"خاک گلدان مصرف‌شده", emoji:"🪴", img:"soil.png", compost:true,
+      },
+      { name:"پوست گوجه سیاه‌شده",emoji:"🍅",img:"tomato.png",compost:true, 
+        },
+{ name:"موی انسان",emoji:"💇‍♀️",img:"hair.png",compost:true,
+   },
+{ name:"خاکستر چوب خام",emoji:"🔥",img:"fire.png",compost:true,
+ },
+{ name:"پوست موز خشک‌شده",emoji:"🍌",img:"black.png",compost:true,
+  },
+{ name:"تفاله ذرت بو داده",emoji:"🍿",img:"corn.png",compost:true,
+  },
+
+    // غیرکمپوستی‌ها
+    { name:"پلاستیک", emoji:"🧴", img:"plastic.png", compost:false,
+     },
+    { name:"قوطی فلزی", emoji:"🥫", img:"metal.png", compost:false,
+     },
+    { name:"شیشه", emoji:"🍾", img:"bottlr.png", compost:false,
+      },
+    { name:"روغن و چربی", emoji:"🛢️", img:"oil.png", compost:false,
+     },
+    { name:"گوشت پخته", emoji:"🍗", img:"meat.png", compost:false,
+     },
+    { name:"استخوان", emoji:"🦴", img:"bone.png", compost:false,
+     },
+    { name:"پوشک بچه", emoji:"🚼", img:"diaper.png", compost:false,
+       },
+    { name:"باتری", emoji:"🔋", img:"battrey.png", compost:false,
+     },
+      { name:"جعبه شیر تتراپک",emoji:"🥫",img:"milk.png",compost:false,
+  },
+{ name:"فیلتر سیگار",emoji:"🚬",img:"cigarate.png",compost:false,
+},
+{ name:"برچسب میوه",emoji:"🏷️",img:"lable.png",compost:false,
+ },
+{ name:"کارت بانکی سوخته",emoji:"💳",img:"card.png",compost:false,
+ },
+{ name:"گرد و خاک جاروبرقی",emoji:"🧹",img:"cleaner.png",compost:false,
+},
+  ];
+if (!localStorage.getItem("session_id")) {
+  const sid = "SID-" + Date.now() + "-" + Math.random().toString(16).slice(2);
+  localStorage.setItem("session_id", sid);
+}
+
+const TARGET_SCORE = 10;
+const GAME_SECONDS = 60;
+
+let score = 0;          // یعنی تعداد ستاره‌های فعال (0..10)
+let gameEnded = false;
+let isAnimating = false;
+
+let timeLeft = GAME_SECONDS;
+let timerInterval = null;
+let queue = [];
+let index = 0;
+let correct = 0;
+const timerBox = document.getElementById("timerBox");
+const timeText = document.getElementById("timeText");
+const stars = Array.from(document.querySelectorAll("#starsBox .star"));
+
+  const TOTAL = items.length;
+
+
+
+  // ---------- DOM ----------
+  const scoreText   = document.getElementById("scoreText");
+  const correctText = document.getElementById("correctCount");
+  const treeProgress= document.getElementById("treeProgress");
+  const cardStack   = document.getElementById("cardStack");
+  const treeArea    = document.getElementById("treeArea");
+  const treeFrame = document.getElementById("treeFrame"); // اگر نیست null می‌ماند
+  const treeGlow    = document.getElementById("treeGlow");
+  const treeHit     = document.getElementById("treeHit");
+  const trashHit    = document.getElementById("trashHit");
+  const floatScore  = document.getElementById("floatScore");
+  const endBackdrop = document.getElementById("endBackdrop");
+  const endTitle    = document.getElementById("endTitle");
+  const endText     = document.getElementById("endText");
+  const btnBack     = document.getElementById("btnBack");
+  const btnRetry    = document.getElementById("btnRetry");
+  const ariaText    = document.getElementById("ariaText");
+  const hintBtn     = document.getElementById("hintBtn");
+  const hintPopup   = document.getElementById("hintPopup");
+
+  const sCorrect = document.getElementById("sCorrect");
+  const sWrong   = document.getElementById("sWrong");
+  const sSuccess = document.getElementById("sSuccess");
+
+  // ---------- توابع کمکی ----------
+  function shuffle(arr) {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  function playSound(el) {
+    if (!el) return;
+    el.currentTime = 0;
+    el.play().catch(()=>{});
+  }
+/* =========================
+   Web Audio (مثل نمونه)
+========================= */
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+function ensureAudio() {
+  if (audioCtx.state === "suspended") audioCtx.resume().catch(()=>{});
+}
+
+function playCorrect() {
+  ensureAudio();
+  const o = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  o.type = "sine";
+  o.frequency.setValueAtTime(520, audioCtx.currentTime);
+  o.frequency.exponentialRampToValueAtTime(1400, audioCtx.currentTime + 0.18);
+  g.gain.setValueAtTime(0.32, audioCtx.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.22);
+  o.connect(g).connect(audioCtx.destination);
+  o.start();
+  o.stop(audioCtx.currentTime + 0.22);
+}
+
+function playWrong() {
+  ensureAudio();
+  const o = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  o.type = "sawtooth";
+  o.frequency.setValueAtTime(210, audioCtx.currentTime);
+  g.gain.setValueAtTime(0.32, audioCtx.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
+  o.connect(g).connect(audioCtx.destination);
+  o.start();
+  o.stop(audioCtx.currentTime + 0.25);
+}
+
+function playSuccess() {
+  ensureAudio();
+  // یک جینگِل کوتاه (سه نت)
+  const notes = [740, 980, 1240];
+  notes.forEach((f, i) => {
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.type = "triangle";
+    o.frequency.setValueAtTime(f, audioCtx.currentTime + i * 0.09);
+    g.gain.setValueAtTime(0.0001, audioCtx.currentTime + i * 0.09);
+    g.gain.exponentialRampToValueAtTime(0.28, audioCtx.currentTime + i * 0.09 + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + i * 0.09 + 0.10);
+    o.connect(g).connect(audioCtx.destination);
+    o.start(audioCtx.currentTime + i * 0.09);
+    o.stop(audioCtx.currentTime + i * 0.09 + 0.12);
+  });
+}
+function updateScoreUI() {
+  if (scoreText) scoreText.textContent = score;
+  if (correctText) correctText.textContent = correct + " / " + TOTAL;
+
+  let ratio = 0;
+  if (typeof plants !== "undefined" && plants[0] && plants[0].energy) {
+    ratio = Math.min(1, plants[0].energy / 8000);
+  }
+  if (treeProgress) treeProgress.style.width = (ratio * 100) + "%";
+}
+
+function updateTimerUI(){
+  const mm = String(Math.floor(timeLeft / 60)).padStart(2, "0");
+  const ss = String(timeLeft % 60).padStart(2, "0");
+  timeText.textContent = `${mm}:${ss}`;
+}
+
+function startTimer() {
+  clearInterval(timerInterval);
+  timeLeft = GAME_SECONDS;
+  timerBox.classList.remove("timer-warning");
+  updateTimerUI();
+
+  timerInterval = setInterval(() => {
+    if (gameEnded) { clearInterval(timerInterval); return; }
+
+    timeLeft--;
+    updateTimerUI();
+
+    if (timeLeft <= 10) timerBox.classList.add("timer-warning");
+    if (timeLeft <= 0) endGame(false); // زمان تمام شد
+  }, 1000);
+}
+function activateStar() {
+  if (score >= TARGET_SCORE) return;
+  stars[score].classList.add("active");
+  score++;
+
+  if (score >= TARGET_SCORE) {
+    endGame(true); // برد با 10 ستاره
+  }
+}
+
+
+
+  function showFloatingScore(text, isGood) {
+    floatScore.textContent = text;
+    floatScore.style.color = isGood ? "#b8ff6a" : "#ffb5b5";
+    floatScore.style.left  = "50%";
+    floatScore.style.top   = "25%";
+    floatScore.classList.remove("show");
+    void floatScore.offsetWidth;
+    floatScore.classList.add("show");
+  }
+
+  function spawnFallingLeaf() {
+  if (!treeArea) return;          // یا if (!treeFrame) return;
+  const leaf = document.createElement("div");
+  leaf.className = "falling-leaf";
+  leaf.style.left = "50%";
+  leaf.style.top  = "20%";
+  treeArea.appendChild(leaf);     // به جای treeFrame
+  setTimeout(() => leaf.remove(), 1300);
+}
+
+
+  function animateAria() {
+    const panel = document.querySelector(".aria-panel");
+    if (!panel) return;
+    panel.classList.remove("aria-flash");
+    void panel.offsetWidth;
+    panel.classList.add("aria-flash");
+  }
+
+  function setAria(textHtml) {
+    ariaText.innerHTML = textHtml;
+    animateAria();
+  }
+
+  // ---------- نمایش کارت بعدی ----------
+  function showNextCard() {
+    cardStack.innerHTML = "";
+    if (index >= queue.length) {
+      endGame();
+      return;
+    }
+
+    const item = queue[index];
+
+    const card = document.createElement("div");
+    card.className = "trash-card";
+    card.id = "currentCard";
+
+    const rot = (Math.random() * 14 - 7).toFixed(1);
+    card.style.setProperty("--rot", rot + "deg");
+
+    const main = document.createElement("div");
+    main.className = "trash-main";
+
+    const label = document.createElement("div");
+    label.className = "trash-label";
+    label.textContent = item.name;
+
+    const sub = document.createElement("div");
+    sub.className = "trash-sub";
+    sub.textContent = "تصمیم بگیر این مورد روی درخت برود یا در سطل مخصوصش.";
+
+    main.appendChild(label);
+    main.appendChild(sub);
+
+    const icon = document.createElement("div");
+    icon.className = "trash-emoji";
+
+    if (item.img) {
+      const img = document.createElement("img");
+      img.src = item.img;
+      icon.appendChild(img);
+    } else {
+      icon.textContent = item.emoji || "♻️";
+    }
+
+    card.appendChild(main);
+    card.appendChild(icon);
+
+    cardStack.appendChild(card);
+// ✅ اگر کارت خارج از صفحه افتاد، به وسط برگردان
+requestAnimationFrame(() => {
+  const r = card.getBoundingClientRect();
+  const vw = window.innerWidth, vh = window.innerHeight;
+
+  const out =
+    r.right < 0 || r.left > vw || r.bottom < 0 || r.top > vh;
+
+  if (out) {
+    // کارت را داخل cardStack فیکس کن
+    card.style.top = "20px";
+    card.style.left = "50%";
+    card.style.transform = "translateX(-50%) rotate(var(--rot, 0deg))";
+  }
+});
+    attachDrag(card, item);
+    treeGlow.classList.add("active");
+  }
+
+  // ---------- درگ کارت ----------
+  function attachDrag(card, item) {
+    let dragging = false;
+    let startX = 0, startY = 0;
+    let offsetX = 0, offsetY = 0;
+
+    function onDown(e) {
+      e.preventDefault();
+      dragging = true;
+      card.classList.add("dragging");
+      if (e.type === "touchstart") {
+        const t = e.touches[0];
+        startX = t.clientX;
+        startY = t.clientY;
+      } else {
+        startX = e.clientX;
+        startY = e.clientY;
+      }
+
+      document.addEventListener("mousemove", onMove);
+      document.addEventListener("touchmove", onMove, { passive: false });
+      document.addEventListener("mouseup", onUp);
+      document.addEventListener("touchend", onUp);
+    }
+
+    function onMove(e) {
+      if (!dragging) return;
+      e.preventDefault();
+      let clientX, clientY;
+      if (e.type === "touchmove") {
+        const t = e.touches[0];
+        clientX = t.clientX;
+        clientY = t.clientY;
+      } else {
+        clientX = e.clientX;
+        clientY = e.clientY;
+      }
+      offsetX = clientX - startX;
+      offsetY = clientY - startY;
+      card.style.transform =
+        `translateX(calc(-50% + ${offsetX}px)) translateY(${offsetY}px) rotate(var(--rot)) scale(1.07)`;
+    }
+
+    function onUp(e) {
+      if (!dragging) return;
+      dragging = false;
+      card.classList.remove("dragging");
+
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("touchmove", onMove);
+      document.removeEventListener("mouseup", onUp);
+      document.removeEventListener("touchend", onUp);
+
+      const cardRect  = card.getBoundingClientRect();
+      const treeRect  = treeHit.getBoundingClientRect();
+      const trashRect = trashHit.getBoundingClientRect();
+
+      const overTree = !(
+        cardRect.right  < treeRect.left ||
+        cardRect.left   > treeRect.right ||
+        cardRect.bottom < treeRect.top ||
+        cardRect.top    > treeRect.bottom
+      );
+
+      const overTrash = !(
+        cardRect.right  < trashRect.left ||
+        cardRect.left   > trashRect.right ||
+        cardRect.bottom < trashRect.top ||
+        cardRect.top    > trashRect.bottom
+      );
+
+      treeGlow.classList.remove("active");
+      card.style.transform = "translateX(-50%) rotate(var(--rot))";
+
+      handleAnswer(overTree, overTrash, item, card);
+    }
+
+    card.addEventListener("mousedown", onDown);
+    card.addEventListener("touchstart", onDown, { passive: false });
+  }
+
+  // ---------- منطق پاسخ ----------
+function handleAnswer(overTree, overTrash, item, card) {
+  let isCorrect = false;
+  let compostDrop = false;
+
+  if (item.compost && overTree) {
+    isCorrect = true;
+    compostDrop = true;
+  } else if (!item.compost && overTrash) {
+    isCorrect = true;
+  }
+
+  if (isCorrect) {
+     playCorrect();
+
+    if (compostDrop) {
+      setAria(`<span class="good">آفرین!</span> <strong>${item.name}</strong> قابل کمپوست بود.`);
+      if (item.infoGood) ariaText.innerHTML += `<br><span class="good">${item.infoGood}</span>`;
+      boostGrowth(+2500);
+    } else {
+      setAria(`<span class="good">دقیقاً!</span> <strong>${item.name}</strong> باید به سطل مخصوص خودش برود.`);
+      if (item.infoBad) ariaText.innerHTML += `<br><span class="bad">${item.infoBad}</span>`;
+      boostGrowth(+400);
+    }
+
+    correct++;
+    activateStar();
+    updateScoreUI();
+
+    card.style.transition = "transform 0.35s ease, opacity 0.35s ease";
+    card.style.transform = "translateX(-50%) scale(0.6) translateY(-30px)";
+    card.style.opacity = "0";
+
+    setTimeout(() => {
+      card.remove();
+      index++;
+      showNextCard();
+    }, 350);
+
+  } else {
+    playWrong(); 
+
+    spawnFallingLeaf();
+    treeArea.classList.add("shake");
+    setTimeout(() => treeArea.classList.remove("shake"), 350);
+
+    card.classList.add("bounce-back");
+    setTimeout(() => card.classList.remove("bounce-back"), 400);
+
+    if (item.compost && !overTree) {
+      setAria(`<span class="bad">این یکی قابل کمپوست بود.</span> <strong>${item.name}</strong> را روی گیاه رها کن.`);
+    } else if (!item.compost && overTree) {
+      setAria(`<span class="bad">این یکی قابل کمپوست نیست.</span> <strong>${item.name}</strong> را داخل سطل بینداز.`);
+    } else {
+      setAria(`<span class="bad">هنوز درست نیست.</span> دوباره تلاش کن.`);
+    }
+    // کارت می‌ماند
+  }
+}
+
+
+  // ---------- پایان سناریو ----------
+function saveFinalScore() {
+  // امتیاز نهایی همین مرحله = تعداد ستاره‌ها
+  localStorage.setItem("stage1Score", String(score));
+
+  // امتیاز کل (جمع شونده)
+  const prevTotal = parseInt(localStorage.getItem("totalScore") || "0", 10);
+  localStorage.setItem("totalScore", String(prevTotal + score));
+}
+
+function endGame(won) {
+  if (gameEnded) return;
+  gameEnded = true;
+  clearInterval(timerInterval);
+
+  saveFinalScore("stage1Score", score);
+
+  if (won) {
+    endTitle.textContent = "آفرین! ⭐";
+    endText.innerHTML = `تو هر ۱۰ مورد را درست انجام دادی و ۱۰ ستاره کامل شد!<br>امتیاز: <b>${score}</b> از 10`;
+playSuccess();
+    // آزادسازی مرحله بعد
+    let p = JSON.parse(localStorage.getItem("stage1Progress") || "{}");
+    p.s1 = true;
+    p.s2 = true;
+    localStorage.setItem("stage1Progress", JSON.stringify(p));
+
+    playSound(sSuccess);
+  } else {
+    endTitle.textContent = "زمان تمام شد ⏳";
+    endText.innerHTML = `زمان تمام شد.<br>امتیاز: <b>${score}</b> از 10`;
+  }
+
+  endBackdrop.style.display = "flex";
+}
+
+  
+
+document.getElementById("btnNext").addEventListener("click", () => {
+  window.location.href = "stage1-2.html"; // آدرس مرحله بعد
+
+  });
+
+  btnRetry.addEventListener("click", () => {
+  endBackdrop.style.display = "none";
+  clearInterval(timerInterval); // ⬅️ جلوگیری از تایمر معلق
+  resetPlantSystem();
+  initGame();
+});
+
+
+  // ---------- راهنما (لامپ) ----------
+  hintBtn.addEventListener("click", () => {
+    score -= 10;
+    updateScoreUI();
+    showFloatingScore("-10", false);
+
+    hintPopup.style.display = "block";
+    setTimeout(() => {
+      hintPopup.style.display = "none";
+    }, 4500);
+
+    setAria(
+      `<span class="good">راهنمای سریع:</span> هر چیزی که از گیاهان، میوه و سبزی‌ها می‌آید ` +
+      `اغلب <span class="good">کمپوست‌پذیر</span> است؛ ` +
+      `اما مواردی مثل <span class="bad">پلاستیک، شیشه، فلز، باتری، پوشک و گوشت</span> ` +
+      `باید از درخت دور بمانند و به سطل‌های مناسب خودشان برسند.`
+    );
+  });
+
+// --- باز کردن مرحله بعد ---
+let p = JSON.parse(localStorage.getItem("stage1Progress") || "{}");
+p.s1 = true;        // مرحله ۱ انجام شده
+p.s2 = true;        // مرحله ۲ آزاد شود
+localStorage.setItem("stage1Progress", JSON.stringify(p));
+
+function resetPlantSystem() {
+  // پاک‌سازی کامل سیستم
+  points = [];
+  spans = [];
+  skins = [];
+  plants = [];
+  pointCount = 0;
+  spanCount = 0;
+  skinCount = 0;
+  plantCount = 0;
+
+  // ساخت دوباره 25 گیاه
+  for (var i = 0; i < 25; i++) {
+    createPlant();
+  }
+}
+
+
+  // ---------- شروع بازی ----------
+function initGame() {
+  queue = shuffle(items);
+  index = 0;
+  score = 0;
+  correct = 0;
+  gameEnded = false;
+
+  stars.forEach(s => s.classList.remove("active"));
+
+  const plant = plants[0];
+  if (plant) plant.energy = 3000;
+
+  updateScoreUI();
+  startTimer();
+  setAria(
+    "این درخت قلب پردیسه. با هر ماده‌ی <span class=\"good\">قابل کمپوست</span>..." +
+    " جان می‌گیره و با هر انتخاب اشتباه انرژی از دست می‌ده."
+  );
+  showNextCard();
+}
+
+
+</script>
+<script>var canvasContainerDiv = document.getElementById("canvas_container_div");
+var canvas = document.getElementById("canvas");
+var ctx = canvas.getContext("2d");
+var canvRatio = 1;//0.8;  // canvas ratio, as canvas size to lowest of window width or height
+
+///trackers
+var points = [], pointCount = 0;
+var spans = [], spanCount = 0;
+var skins = [], skinCount = 0;
+var worldTime = 0;  // time as frame count
+
+///settings
+var gravity = 0.01;  // (rate of y-velocity increase per frame per point mass of 1)
+var rigidity = 10;  // global span rigidity (as iterations of position accuracy refinement)
+var friction = 0.999;  // (proportion of previous velocity after frame refresh)
+var bounceLoss = 0.9;  // (proportion of previous velocity after bouncing)
+var skidLoss = 0.8;  // (proportion of previous velocity if touching the ground)
+var viewPoints = false;  // (point visibility)
+var viewSpans = false;  // (span visibility)
+var viewScaffolding = false; // (scaffolding visibility)
+var viewSkins = true; // (skin visibility)
+var breeze = 0.4;  // breeziness level (applied as brief left & right gusts)
+
+
+
+
+////---OBJECTS---////
+
+
+///point constructor
+function Point(current_x, current_y, materiality="material") {  // materiality can be "material" or "immaterial"
+  this.cx = current_x;
+  this.cy = current_y; 
+  this.px = this.cx;  // previous x value
+  this.py = this.cy;  // previous y value
+  this.mass = 1;  // (as ratio of gravity)
+  this.materiality = materiality;
+  this.fixed = false;
+  this.id = pointCount;
+  pointCount += 1;
+}
+
+///span constructor
+function Span(point_1, point_2, visibility="visible") {  // visibility can be "visible" or "hidden"
+  this.p1 = point_1;
+  this.p2 = point_2;
+  this.l = distance(this.p1,this.p2); // length
+  this.strength = 1;  // (as ratio of rigidity)
+  this.visibility = visibility;
+  this.id = spanCount;
+  spanCount += 1;
+}
+
+///skins constructor
+function Skin(points_array,color) {
+  this.points = points_array;  // an array of points for skin outline path
+  this.color = color;
+  this.id = skinCount;
+  skinCount += 1;
+}
+
+
+
+
+////---FUNCTIONS---////
+
+
+///scales canvas to window
+function scaleToWindow() {
+  if (window.innerWidth > window.innerHeight) {
+    canvasContainerDiv.style.height = window.innerHeight*canvRatio+"px";
+    canvasContainerDiv.style.width = canvasContainerDiv.style.height;
+  } else {
+    canvasContainerDiv.style.width = window.innerWidth*canvRatio+"px";
+    canvasContainerDiv.style.height = canvasContainerDiv.style.width;
+  }
+}
+
+///converts percentage to canvas x value
+function xValFromPct(percent) {
+  return percent * canvas.width / 100;
+}
+
+///converts percentage to canvas y value
+function yValFromPct(percent) {
+  return percent * canvas.height / 100;
+}
+
+///converts canvas x value to percentage of canvas width
+function pctFromXVal(xValue) {
+  return xValue * 100 / canvas.width;
+}
+
+///converts canvas y value to percentage of canvas height
+function pctFromYVal(yValue) {
+  return yValue * 100 / canvas.height;
+}
+
+///gets a point by id number
+function getPt(id) {
+  for (var i=0; i<points.length; i++) { 
+    if (points[i].id == id) { return points[i]; }
+  }
+}
+
+///gets distance between two points (pythogorian theorum)
+function distance(point_1, point_2) {
+  var x_difference = point_2.cx - point_1.cx;
+  var	y_difference = point_2.cy - point_1.cy;
+  return Math.sqrt( x_difference*x_difference + y_difference*y_difference);
+}
+
+///gets a span's mid point (returns object: { x: <value>, y: <value> } )
+function smp(span) {
+  var mx = ( span.p1.cx + span.p2.cx ) / 2;  // mid x value
+  var my = ( span.p1.cy + span.p2.cy ) / 2;  // mid y value
+  return { x: mx, y: my};
+}
+
+///removes a span by id
+function removeSpan(id) {
+  for( var i = 0; i < spans.length-1; i++){ 
+    if ( spans[i].id === id) { spans.splice(i, 1); }
+  }
+}
+
+///creates a point object instance
+function addPt(xPercent,yPercent,materiality="material") {
+  points.push( new Point( xValFromPct(xPercent), yValFromPct(yPercent), materiality ) );
+  return points[points.length-1];
+}
+
+///creates a span object instance
+function addSp(p1,p2,visibility="visible") {
+  spans.push( new Span( getPt(p1), getPt(p2), visibility ) );
+  return spans[spans.length-1];
+}
+
+///creates a skin object instance
+function addSk(id_path_array, color) {
+  var points_array = [];
+  for ( var i=0; i<id_path_array.length; i++) {
+    points_array.push(points[id_path_array[i]]);
+  }
+  skins.push( new Skin(points_array,color) );
+  return skins[skins.length-1];
+}
+
+///updates point positions based on verlet velocity (i.e., current coord minus previous coord)
+function updatePoints() {
+  for(var i=0; i<points.length; i++) {
+    var p = points[i];  // point object
+    if (!p.fixed) {
+      var	xv = (p.cx - p.px) * friction;	// x velocity
+      var	yv = (p.cy - p.py) * friction;	// y velocity
+      if (p.py >= canvas.height-1 && p.py <= canvas.height) { xv *= skidLoss; }
+      p.px = p.cx;  // updates previous x as current x
+      p.py = p.cy;  // updates previous y as current y
+      p.cx += xv;  // updates current x with new velocity
+      p.cy += yv;  // updates current y with new velocity
+      p.cy += gravity * p.mass;  // add gravity to y
+      if (worldTime % Tl.rib( 100, 200 ) === 0) { p.cx += Tl.rfb( -breeze, breeze ); }  // apply breeze to x
+    }
+  } 
+}
+
+///applies constrains
+function applyConstraints( currentIteration ) {
+  for (var i=0; i<points.length; i++) {
+    var p = points[i];
+    //wall constraints (inverts velocity if point moves beyond a canvas edge)
+    if (p.materiality === "material") {
+      if (p.cx > canvas.width) {
+        p.cx = canvas.width;
+        p.px = p.cx + (p.cx - p.px) * bounceLoss;
+      }
+      if (p.cx < 0) {
+        p.cx = 0;
+        p.px = p.cx + (p.cx - p.px) * bounceLoss;
+      }
+      if (p.cy > canvas.height) {
+        p.cy = canvas.height;
+        p.py = p.cy + (p.cy - p.py) * bounceLoss;
+      }
+      if (p.cy < 0) {
+        p.cy = 0;
+        p.py = p.cy + (p.cy - p.py) * bounceLoss;
+      }
+    }
+  }
+}
+
+///updates span positions and adjusts associated points
+function updateSpans( currentIteration ) {
+  for (var i=0; i<spans.length; i++) {
+    var thisSpanIterations = Math.round( rigidity * spans[i].strength );
+    if ( currentIteration+1 <= thisSpanIterations ) {
+      var s = spans[i];
+      var dx = s.p2.cx - s.p1.cx;  // distance between x values
+      var	dy = s.p2.cy - s.p1.cy;  // distance between y values
+      var d = Math.sqrt( dx*dx + dy*dy);  // distance between the points
+      var	r = s.l / d;	// ratio (span length over distance between points)
+      var	mx = s.p1.cx + dx / 2;  // midpoint between x values 
+      var my = s.p1.cy + dy / 2;  // midpoint between y values
+      var ox = dx / 2 * r;  // offset of each x value (compared to span length)
+      var oy = dy / 2 * r;  // offset of each y value (compared to span length)
+      if (!s.p1.fixed) {
+        s.p1.cx = mx - ox;  // updates span's first point x value
+        s.p1.cy = my - oy;  // updates span's first point y value
+      }
+      if (!s.p2.fixed) {
+        s.p2.cx = mx + ox;  // updates span's second point x value
+        s.p2.cy = my + oy;  // updates span's second point y value
+      }
+    }
+  }
+}
+
+///refines points for position accuracy & shape rigidity by updating spans and applying constraints iteratively
+function refinePositions() {
+  var requiredIterations = rigidity;
+  for (var i=0; i<spans.length; i++) {
+    var thisSpanIterations = Math.round( rigidity * spans[i].strength );
+    if ( thisSpanIterations > requiredIterations ) {
+      requiredIterations = thisSpanIterations;
+    }
+  }
+  for (var j=0; j<requiredIterations; j++) {
+    updateSpans(j);
+    applyConstraints(j);
+  }
+}
+
+///displays points
+function renderPoints() {
+  for (var i=0; i<points.length; i++) {
+    var p = points[i];
+    ctx.beginPath();
+    ctx.fillStyle = "blue";
+    ctx.arc( p.cx, p.cy, 3, 0 , Math.PI*2 );
+    ctx.fill(); 
+  }
+}
+
+///displays spans
+function renderSpans() {
+  for (var i=0; i<spans.length; i++) {
+    var s = spans[i];
+    if (s.visibility == "visible") {
+      ctx.beginPath();
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = "blue";
+      ctx.moveTo(s.p1.cx, s.p1.cy);
+      ctx.lineTo(s.p2.cx, s.p2.cy);
+      ctx.stroke(); 
+    }
+  }
+}
+
+///displays scaffolding & binding spans (i.e., "hidden" spans)
+function renderScaffolding() {
+  ctx.beginPath();
+  for (var i=0; i<spans.length; i++) {
+    var s = spans[i];
+    if (s.visibility === "hidden") {
+      ctx.strokeStyle="pink";
+      ctx.moveTo(s.p1.cx, s.p1.cy);
+      ctx.lineTo(s.p2.cx, s.p2.cy);
+    }
+  }
+  ctx.stroke();
+}
+
+///displays skins 
+function renderSkins() {
+  for(var i=0; i<skins.length; i++) {
+    var s = skins[i];
+    ctx.beginPath();
+    ctx.strokeStyle = s.color;
+    ctx.lineWidth = 0;
+    ctx.lineJoin = "round";
+    ctx.lineCap = "round";
+    ctx.fillStyle = s.color;
+    ctx.moveTo(s.points[0].cx, s.points[0].cy);
+    for(var j=1; j<s.points.length; j++) { ctx.lineTo(s.points[j].cx, s.points[j].cy); }
+    ctx.lineTo(s.points[0].cx, s.points[0].cy);
+    ctx.stroke();
+    ctx.fill();  
+  }
+}
+
+///clears canvas frame
+function clearCanvas() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+///renders all visible components
+function renderImages() {
+  //if ( viewSkins ) { renderSkins(); }  // disabled here so plants can be rendered sequentially in plants.js
+  if ( viewSpans ) { renderSpans(); }
+  if ( viewPoints ) { renderPoints(); }
+  if ( viewScaffolding ) { renderScaffolding(); }
+}
+
+
+
+
+////---EVENTS---////
+
+
+///scaling
+window.addEventListener('resize', scaleToWindow);
+
+
+
+
+////---RUN---////
+
+
+function runVerlet() {
+	scaleToWindow();
+  updatePoints();
+  refinePositions();
+  clearCanvas();
+  renderImages();
+  worldTime++;
+}
+
+
+
+
+
+
+
+
+
+////////////////////// TOOLS.JS ////////////////////////////
+
+
+
+const Tl = {
+
+	//random integer between two numbers (min/max inclusive)
+	rib: function( min, max ) {
+ 		return Math.floor( Math.random() * ( Math.floor(max) - Math.ceil(min) + 1 ) ) + Math.ceil(min);
+	},
+
+	//random float between two numbers
+	rfb: function( min, max ) {
+ 		return Math.random() * ( max - min ) + min;
+	},
+
+	//converts radians to degrees
+	radToDeg: function( radian ) {
+	  return radian * 180 / Math.PI;
+	},
+
+	//converts degrees to radians
+	degToRad: function( degree ) {
+	  return degree / 180 * Math.PI;
+	},
+
+	//pauses program
+	pause: function( milliseconds ) {
+  	var then = Date.now(); 
+  	var now;
+  	do { now = Date.now() } while ( now - then < milliseconds );
+	}
+
+
+};
+
+
+
+
+
+
+
+
+
+/////////////////////////////////////////////////////////////
+///////////////////// PLANT LIFE ////////////////////////////
+/////////////////////////////////////////////////////////////
+
+
+
+
+////---INITIATION---////
+
+
+///trackers
+var plants = [], plantCount = 0;
+var sunRays = [], sunRayCount = 0;
+var shadows = [], shadowCount = 0;
+
+///settings
+var worldSpeed = 1;//3;  // (as frames per iteration; higher is slower) (does not affect physics iterations)
+var restrictGrowthByEnergy = true;  // restricts plant growth by energy level (if false plants grow freely)
+var viewShadows = false;  // (shadow visibility)
+var phr = 2;  // photosynthesis rate ( rate plants store energy from sunlight )
+var geer = 0.5;  // growth energy expenditure rate (rate energy is expended for growth)
+var leer = 0.03;  // living energy expenditure rate (rate energy is expended for living, per segment)
+
+
+
+
+////---OBJECTS---////
+
+
+///plant constructor
+function Plant( xLocation ) {
+  this.id = plantCount;
+  this.segments = []; this.segmentCount = 0;
+  this.xLocation = xLocation;
+  this.energy = 5000;  // seed energy (starting energy level at germination)
+  this.isAlive = true;
+  //settings
+  this.forwardGrowthRate = gravity * Tl.rfb(35,50);//Tl.rfb(18,22);  // (rate of cross spans increase per frame)
+  this.outwardGrowthRate = this.forwardGrowthRate * Tl.rfb(0.18,0.22);  // (rate forward span widens per frame)
+  this.maxSegmentWidth = Tl.rfb(11,13);  // maximum segment width (in pixels)
+  this.maxTotalSegments = Tl.rib(10,20);  // maximum total number of segments
+  this.firstLeafSegment = Tl.rib(2,4);  // (segment on which first leaf set grows)
+  this.leafFrequency = Tl.rib(2,3);  // (number of segments until next leaf set)
+  this.maxLeaflength = this.maxSegmentWidth * Tl.rfb(4,7);  // maximum leaf length at maturity
+  this.leafGrowthRate = this.forwardGrowthRate * Tl.rfb(1.4,1.6);  // leaf growth rate
+  //base segment
+  this.ptB1 = addPt( this.xLocation - 0.1, 100 );  // base point 1
+  this.ptB2 = addPt( this.xLocation + 0.1, 100 );  // base point 2
+  this.ptB1.fixed = this.ptB2.fixed = true;  // fixes base points to ground
+  this.spB = addSp( this.ptB1.id, this.ptB2.id );  // adds base span
+  createSegment( this, null, this.ptB1, this.ptB2 );  // creates the base segment (with "null" parent)
+}
+
+
+///segment constructor
+function Segment( plant, parentSegment, basePoint1, basePoint2 ) {
+  this.plantId = plant.id;
+  this.id = plant.segmentCount;
+  this.childSegment = null;
+  this.hasChildSegment = false;
+  this.parentSegment = parentSegment;
+  this.isBaseSegment = false; if (this.parentSegment === null) { this.isBaseSegment = true; }
+  this.hasLeaves = false;
+  this.hasLeafScaffolding = false;
+  //settings
+  this.forwardGrowthRateVariation = Tl.rfb(0.95,1.05);//(0.95,1.05);  // forward growth rate variation
+  this.mass = 1;  // mass of the segment stalk portion ( divided between the two extension points)
+  this.strength = 1.5;  // as multiple of global rigidity (higher values effect performance)
+  //base points
+  this.ptB1 = basePoint1;  // base point 1
+  this.ptB2 = basePoint2;  // base point 2
+  //extension points
+  var originX = ( this.ptB1.cx + this.ptB2.cx ) / 2;  // center of base points x values
+  var originY = ( this.ptB1.cy + this.ptB2.cy ) / 2;  // center of base points y values
+  this.ptE1 = addPt( pctFromXVal( originX ) - 0.1, pctFromYVal( originY ) - 0.1 );  // extension point 1
+  this.ptE2 = addPt( pctFromXVal( originX ) + 0.1, pctFromYVal( originY ) - 0.1 );  // extension point 2
+  this.ptE1.mass = this.mass / 2;
+  this.ptE2.mass = this.mass / 2;
+  //spans
+  this.spL = addSp( this.ptB1.id, this.ptE1.id );  // left span
+  this.spR = addSp( this.ptB2.id, this.ptE2.id );  // right span
+  this.spF = addSp( this.ptE1.id, this.ptE2.id );  // forward span
+  this.spCd = addSp( this.ptE1.id, this.ptB2.id );  // downward (l to r) cross span
+  this.spCu = addSp( this.ptB1.id, this.ptE2.id );  // new upward (l to r) cross span
+  this.spL.rigidity = this.strength;
+  this.spR.rigidity = this.strength;
+  this.spF.rigidity = this.strength;
+  this.spCd.rigidity = this.strength;
+  this.spCu.rigidity = this.strength;
+  //base segment
+  if (!this.isBaseSegment) {
+    this.spCdP = addSp( this.ptE1.id, this.parentSegment.ptB2.id ); // downward (l to r) cross span to parent
+    this.spCuP = addSp( this.parentSegment.ptB1.id, this.ptE2.id ); // upward (l to r) cross span to parent
+    this.spCdP.rigidity = this.strength;
+    this.spCdP.rigidity = this.strength;
+  }
+  //leaves
+  this.ptLf1 = null;  // leaf point 1 (leaf tip)
+  this.ptLf2 = null;  // leaf point 2 (leaf tip)  
+  this.spLf1 = null;  // leaf 1 Span
+  this.spLf2 = null;  // leaf 2 Span
+  //skins
+  this.skins = [];
+  this.skins.push( addSk( [ this.ptE1.id, this.ptE2.id, this.ptB2.id, this.ptB1.id ], "darkgreen" ) );
+}
+
+///sun ray constructor
+function SunRay() {
+  this.id = sunRayCount;
+  this.x = xValFromPct( this.id );
+  this.intensity = 1;
+  this.leafContacts = [];  // (as array of objects: { y: <leaf contact y value>, plant: <plant> })
+}
+
+//shadow constructor
+function Shadow( leafSpan ) {
+  this.p1 = leafSpan.p1;
+  this.p2 = leafSpan.p2;
+  this.p3 = { cx: this.p2.cx, cy: yValFromPct( 100 ) };
+  this.p4 = { cx: this.p1.cx, cy: yValFromPct( 100 ) };
+}
+
+
+
+
+////---FUNCTIONS---////
+
+
+//creates a new plant
+function createPlant() {
+  plantCount++;
+  this.energy = 15000;
+  plants.push( new Plant(Tl.rib(10,90)) );
+}
+
+///creates a new segment
+function createSegment( plant, parentSegment, basePoint1, basePoint2 ) {
+  plant.segmentCount++;
+  plant.segments.unshift( new Segment( plant, parentSegment, basePoint1, basePoint2 ) );
+  if (parentSegment !== null) {
+    parentSegment.childSegment = plant.segments[plant.segments.length-1];
+    parentSegment.hasChildSegment = true;
+  }
+}
+
+///creates a new sun ray (one for each x value as an integer percentage of the canvas's width)
+function createSunRays() {
+  for ( var i=0; i<101; i++ ) {
+    sunRays.push( new SunRay() );
+    sunRayCount++;
+  }
+}
+
+///gets each leaf span's y values at integer x values as points where sun rays contact leaf
+function markRayLeafIntersections() {
+  for ( var i=0; i<plants.length; i++ ) {
+    var p = plants[i];
+    for ( var j=0; j<p.segments.length; j++ ) {
+      var s = p.segments[j];
+      if ( s.hasLeaves ) {
+        var p1, p2;
+        //leaf 1
+        //assigns p1 as leftmost leaf span point and p2 as rightmost leaf span point
+        if ( s.ptLf1.cx < s.ptB1.cx ) { p1 = s.ptLf1; p2 = s.ptB1; } else { p1 = s.ptB1; p2 = s.ptLf1; }  
+        //loops through leaf span's integer x values
+        var xPctMin = Math.ceil( pctFromXVal( p1.cx ) );
+        var xPctMax = Math.floor( pctFromXVal( p2.cx ) );
+        for ( var lcx=xPctMin; lcx<=xPctMax; lcx++ ) {  // leaf contact x value
+          var lcy = p1.cy + (xValFromPct(lcx)-p1.cx) * (p2.cy-p1.cy) / (p2.cx-p1.cx);  // leaf contact y value
+          //pushes corresponding y value and plant instance to associated sun ray instance
+          sunRays[lcx].leafContacts.push( { y: lcy, plant: p } );
+        }
+        //leaf 2
+        if ( s.ptLf2.cx < s.ptB2.cx ) { p1 = s.ptLf2; p2 = s.ptB2; } else { p1 = s.ptB2; p2 = s.ptLf2; }
+        xPctMin = Math.ceil( pctFromXVal( p1.cx ) );
+        xPctMax = Math.floor( pctFromXVal( p2.cx ) );  
+        for ( lcx=xPctMin; lcx<=xPctMax; lcx++ ) {  // leaf contact x value
+          lcy = p1.cy + (xValFromPct(lcx)-p1.cx) * ( p2.cy - p1.cy) / ( p2.cx - p1.cx ); // leaf contact y value
+          sunRays[lcx].leafContacts.push( { y: lcy, plant: p } );
+        }
+      }
+    } 
+  }
+}
+
+///transfers energy from sun rays to leaves
+function photosynthesize() {
+  for ( var i=0; i<sunRays.length; i++ ) {
+    var sr = sunRays[i];  // sun ray  
+    //sorts leaf contact points from highest to lowest elevation (increasing y value)
+    sr.leafContacts.sort( function( a, b ) { return a.y - b.y } );
+    //when a sun ray hits a leaf, transfers half of the ray's intensity to the plant as energy
+    for ( var j=0; j<sr.leafContacts.length; j++) {
+      var lc = sr.leafContacts[j];  // leaf contact ({ y: <leaf contact y value>, plant: <plant> })
+      sr.intensity /= 2;  
+      lc.plant.energy += sr.intensity * phr;
+    }
+    sr.leafContacts = []; sr.intensity = 1;  // resets sun ray's leaf contact points & intensity for next iteration
+  }
+}
+
+///sheds sunlight
+function shedSunlight() {
+  markRayLeafIntersections();
+  photosynthesize(); 
+}
+
+///marks shadow positions (based on leaf spans)
+function markShadowPositions( segment ) {
+  shadows.push( new Shadow( segment.spLf1 ) );
+  shadows.push( new Shadow( segment.spLf2 ) );
+}
+
+///grows all plants
+function growPlants() {
+  for (var i=0; i<plants.length; i++) {
+    var plant = plants[i];
+    //caps plant energy based on segment count
+    if ( plant.energy > plant.segmentCount * 1000 && plant.energy > 5000 ) {
+      plant.energy = plant.segmentCount * 1000;
+    }
+    //checks for sufficient energy for growth (must be greater than zero to grow)
+    if ( plant.energy > 0 || !restrictGrowthByEnergy ) {
+      for (var j=0; j<plants[i].segments.length; j++) {
+        var segment = plants[i].segments[j];
+        //lengthens segment spans
+        if ( segment.spF.l < plant.maxSegmentWidth && plant.segments.length < plant.maxTotalSegments) { 
+          lengthenSegmentSpans( plant, segment );
+          plant.energy -= segment.spCd.l * geer;  // reduces energy by a ratio of segment size
+        }
+        //generates new segment
+        if ( readyForChildSegment( plant, segment ) ) { 
+          createSegment( plant, segment, segment.ptE1, segment.ptE2 ); 
+        }
+        //handles leaves
+        if ( !segment.hasLeaves ) { 
+          generateLeavesWhenReady( plant, segment ); 
+        } else if ( plant.segments.length < plant.maxTotalSegments ) {
+          growLeaves( plant, segment );
+          plant.energy -= ( segment.spLf1.l + segment.spLf2.l ) * geer;  // reduces energy by a ratio of leaf length
+        }
+      }
+    }
+    //cost of living
+    plant.energy -= plant.segmentCount * leer;  // reduces energy by a ratio of segment count
+  }
+}
+
+///lengthens segment spans for growth
+function lengthenSegmentSpans( plant, segment ) {
+  if (segment.isBaseSegment) {
+    segment.ptB1.cx -= plant.outwardGrowthRate / 2;
+    segment.ptB2.cx += plant.outwardGrowthRate / 2;
+    plant.spB.l = distance( segment.ptB1, segment.ptB2 );
+    segment.spCd.l = distance( segment.ptE1, segment.ptB2 ) + plant.forwardGrowthRate / 3;
+    segment.spCu.l = segment.spCd.l;
+  } else {
+    segment.spCdP.l = distance( segment.ptE1, segment.parentSegment.ptB2 ) + plant.forwardGrowthRate;
+    segment.spCuP.l = segment.spCdP.l * segment.forwardGrowthRateVariation;
+    segment.spCd.l = distance( segment.ptE1, segment.ptB2 );
+    segment.spCu.l = distance( segment.ptB1, segment.ptE2 );
+  } 
+  segment.spF.l += plant.outwardGrowthRate;
+  segment.spL.l = distance( segment.ptB1, segment.ptE1 );
+  segment.spR.l = distance( segment.ptB2, segment.ptE2 );
+}
+
+///checks whether a segment is ready to generate a child segment
+function readyForChildSegment( plant, segment ) {
+  return segment.spF.l > plant.maxSegmentWidth * 0.333 && 
+         !segment.hasChildSegment && 
+         plant.segmentCount < plant.maxTotalSegments;
+}
+
+///generates leaves when segment is ready
+function generateLeavesWhenReady ( plant, segment ) {
+  var p = plant;
+  var s = segment;
+  if (  s.id >= p.firstLeafSegment && 
+        s.id % p.leafFrequency === 0 && 
+        s.spF.l > p.maxSegmentWidth * 0.1 ||
+        s.id === p.maxTotalSegments-1 ) {
+    var fsmp = smp( s.spF );  // forward span mid point ( { x: <value>, y: <value> } )
+    s.ptLf1 = addPt( pctFromXVal( fsmp.x ), pctFromYVal( fsmp.y - 1 ) );  // leaf 1 tip point (left)
+    s.ptLf2 = addPt( pctFromXVal( fsmp.x ), pctFromYVal( fsmp.y - 1 ) );  // leaf 2 tip point (right)
+    s.spLf1 = addSp( s.ptB1.id, s.ptLf1.id );  // leaf 1 span (left)
+    s.spLf2 = addSp( s.ptB2.id, s.ptLf2.id );  // leaf 2 span (right)
+    s.leafTipsTetherSpan = addSp( s.ptLf1.id, s.ptLf2.id );  // leaf tip tether span
+    s.hasLeaves = true;
+  }
+}
+
+///add leaf scaffolding
+function addLeafScaffolding( plant, segment ) {
+  var p = plant;
+  var s = segment;
+  //remove leaf tips tether
+  removeSpan(s.leafTipsTetherSpan.id);
+  //apply leaf-unfold boosters
+  s.ptLf1.cx -= gravity * 100;
+  s.ptLf2.cx += gravity * 100;
+  //add scaffolding points
+  //(leaf 1)
+  var x = s.ptE1.cx + ( s.ptE1.cx - s.ptE2.cx ) * 0.5;
+  var y = s.ptE1.cy + ( s.ptE1.cy - s.ptE2.cy ) * 0.5;
+  s.ptLf1ScA = addPt( pctFromXVal( x ), pctFromXVal( y ), "immaterial" ); s.ptLf1ScA.mass = 0;
+  x = ( s.ptLf1.cx + s.ptLf1ScA.cx ) / 2 ;
+  y = ( s.ptLf1.cy + s.ptLf1ScA.cy ) / 2 ;
+  s.ptLf1ScB = addPt( pctFromXVal( x ), pctFromXVal( y ), "immaterial" ); s.ptLf1ScB.mass = 0;
+  //(leaf 2)
+  x = s.ptE2.cx + ( s.ptE2.cx - s.ptE1.cx ) * 0.5;
+  y = s.ptE2.cy + ( s.ptE2.cy - s.ptE1.cy ) * 0.5;
+  s.ptLf2ScA = addPt( pctFromXVal( x ), pctFromXVal( y ), "immaterial" ); s.ptLf2ScA.mass = 0;
+  x = ( s.ptLf2.cx + s.ptLf2ScA.cx ) / 2 ;
+  y = ( s.ptLf2.cy + s.ptLf2ScA.cy ) / 2 ;
+  s.ptLf2ScB = addPt( pctFromXVal( x ), pctFromXVal( y ), "immaterial" ); s.ptLf2ScB.mass = 0;
+  //add scaffolding spans
+  //(leaf 1)
+  s.spLf1ScA = addSp( s.ptE1.id, s.ptLf1ScA.id, "hidden" );
+  s.spLf1ScB = addSp( s.ptB1.id, s.ptLf1ScA.id, "hidden" ); 
+  s.spLf1ScC = addSp( s.ptLf1ScA.id, s.ptLf1ScB.id, "hidden" ); 
+  s.spLf1ScD = addSp( s.ptLf1ScB.id, s.ptLf1.id, "hidden" ); 
+  //(leaf 2)
+  s.spLf2ScA = addSp( s.ptE2.id, s.ptLf2ScA.id, "hidden" ); 
+  s.spLf2ScB = addSp( s.ptB2.id, s.ptLf2ScA.id, "hidden" ); 
+  s.spLf2ScC = addSp( s.ptLf2ScA.id, s.ptLf2ScB.id, "hidden" ); 
+  s.spLf2ScD = addSp( s.ptLf2ScB.id, s.ptLf2.id, "hidden" );
+  s.hasLeafScaffolding = true;
+}
+
+///grows leaves
+function growLeaves( plant, segment ) {
+  var p = plant;
+  var s = segment;
+  if ( s.spLf1.l < p.maxLeaflength ) {
+    //extend leaves
+    s.spLf1.l = s.spLf2.l += p.leafGrowthRate;
+    if ( s.spF.l > p.maxSegmentWidth*0.6 && !s.hasLeafScaffolding ) {
+      // add scaffolding when leaves unfold
+      addLeafScaffolding( plant, segment );
+    } else if ( s.hasLeafScaffolding ) {
+      //extend scaffolding if present
+      //(leaf 1)
+      s.spLf1ScA.l += p.leafGrowthRate * 1.25;
+      s.spLf1ScB.l += p.leafGrowthRate * 1.5;
+      s.spLf1ScC.l += p.leafGrowthRate * 0.06;
+      s.spLf1ScD.l += p.leafGrowthRate * 0.06;
+      //(leaf 2)
+      s.spLf2ScA.l += p.leafGrowthRate * 1.25;
+      s.spLf2ScB.l += p.leafGrowthRate * 1.5;
+      s.spLf2ScC.l += p.leafGrowthRate * 0.06;
+      s.spLf2ScD.l += p.leafGrowthRate * 0.06;
+    }
+  }
+}
+
+///renders leaf
+function renderLeaf( plant, leafSpan ) {
+  var p1x = leafSpan.p1.cx;
+  var p1y = leafSpan.p1.cy;
+  var p2x = leafSpan.p2.cx;
+  var p2y = leafSpan.p2.cy;
+  var mpx = ( p1x + p2x ) / 2;  // mid point x
+  var mpy = ( p1y + p2y ) / 2;  // mid point y
+  ctx.lineWidth = 2;
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
+  ctx.strokeStyle = "#003000";
+  ctx.fillStyle = "yellow";
+  var ah = 0.35;  // arc height
+  //leaf top
+  var ccpx = mpx + ( p2y - p1y ) * ah;  // curve control point x
+  var ccpy = mpy + ( p1x - p2x ) * ah;  // curve control point y
+  ctx.beginPath();
+  ctx.moveTo(p1x,p1y);
+  ctx.quadraticCurveTo(ccpx,ccpy,p2x,p2y);
+  ctx.stroke();
+  ctx.fill();
+  //leaf bottom
+  ccpx = mpx + ( p1y - p2y ) * ah;  // curve control point x
+  ccpy = mpy + ( p2x - p1x ) * ah;  // curve control point y
+  ctx.beginPath();
+  ctx.moveTo(p1x,p1y);
+  ctx.quadraticCurveTo(ccpx,ccpy,p2x,p2y);
+  ctx.stroke();
+  ctx.fill();
+  //leaf center
+  ctx.beginPath();
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = "black";
+  ctx.moveTo(p1x,p1y);
+  ctx.lineTo(p2x,p2y);
+  ctx.stroke();
+}
+
+///renders leaves
+function renderLeaves( plant, segment ) {
+  if ( segment.hasLeaves ) {
+    renderLeaf( plant, segment.spLf1 );
+    renderLeaf( plant, segment.spLf2 );
+    if ( viewShadows ) { markShadowPositions( segment ); }
+  }
+}
+
+///renders stalks
+function renderStalks( plant, segment ) {
+  for (var i=0; i<segment.skins.length; i++) {
+    var s = segment.skins[i];
+    //fills
+    ctx.beginPath();
+    ctx.fillStyle = s.color;
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = "white";
+    ctx.moveTo(s.points[0].cx, s.points[0].cy);
+    for(var j=1; j<s.points.length; j++) { ctx.lineTo(s.points[j].cx, s.points[j].cy); }
+    ctx.lineTo(s.points[0].cx, s.points[0].cy);
+    ctx.stroke();
+    ctx.fill(); 
+    //outlines
+    ctx.beginPath();
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = "black";
+    ctx.moveTo(s.points[3].cx, s.points[3].cy);
+    ctx.lineTo(s.points[0].cx, s.points[0].cy);
+    ctx.moveTo(s.points[2].cx, s.points[2].cy);
+    ctx.lineTo(s.points[1].cx, s.points[1].cy);
+    ctx.stroke();
+    if ( !segment.hasChildSegment ) {
+      ctx.beginPath();
+      ctx.moveTo(s.points[3].cx, s.points[3].cy);
+      ctx.lineTo(s.points[2].cx, s.points[2].cy);
+      ctx.stroke();
+    }
+  }
+}
+
+///renders plants (sequentially)
+function renderPlants() {
+  for (var i=0; i<plants.length; i++) {
+    for (var j=0; j<plants[i].segments.length; j++) {
+      var plant = plants[i];
+      var segment = plants[i].segments[j];
+      renderStalks( plant, segment );
+      renderLeaves( plant, segment );
+    }
+  }
+}
+
+///renders shadows (from highest to lowest elevation)
+function renderShadows() {
+  shadows.sort( function( a, b ) { return a.p2.cy - b.p2.cy } );
+  for ( var i=0; i<shadows.length; i++ ) {
+    var sh = shadows[i];
+    ctx.beginPath();
+    ctx.moveTo( sh.p1.cx, sh.p1.cy );
+    ctx.lineTo( sh.p2.cx, sh.p2.cy ); 
+    ctx.lineTo( sh.p3.cx, sh.p3.cy );
+    ctx.lineTo( sh.p4.cx, sh.p4.cy );
+    ctx.lineTo( sh.p1.cx, sh.p1.cy );
+    ctx.fillStyle = "rgba( 0, 0, 0, 0.1 )";
+    ctx.fill();  
+  }
+  //resets shadows
+  shadows = []; shadowCount = 0;
+}
+
+
+// -------------------
+// ⭐ کنترل رشد از بیرون (بازی اصلی)
+// -------------------
+function boostGrowth(amount) {
+    if (!plants || plants.length === 0) return;
+
+    // روی همه گیاه‌ها اثر کند
+    for (let i = 0; i < plants.length; i++) {
+        plants[i].energy += amount;
+        if (plants[i].energy < 0) plants[i].energy = 0;
+    }
+}
+
+
+
+////---DISPLAY---////
+
+for ( var i=0; i<25; i++ ) {
+  createPlant();
+}
+
+function display() {
+  runVerlet();
+if (plants[0].energy > 0) {
+    growPlants();
+}
+renderPlants();
+window.requestAnimationFrame(display);
+
+}
+
+createSunRays();
+display();
+initGame();
+console.log("initGame called");
+console.log("cardStack:", document.getElementById("cardStack"));
+setTimeout(()=>console.log("cardStack children:", document.getElementById("cardStack")?.children?.length), 500);
+
+window.onpageshow = function(e){
+    if (e.persisted) {
+        location.reload();
+    }
+};
+function saveFinalScore(stageKey, stageScore) {
+  // امتیاز این مرحله
+  localStorage.setItem(stageKey, String(stageScore));
+
+  // امتیاز کل (جمع شونده)
+  const prevTotal = parseInt(localStorage.getItem("totalScore") || "0", 10);
+  localStorage.setItem("totalScore", String(prevTotal + stageScore));
+}
+
+function unlockNextStage() {
+    let p = JSON.parse(localStorage.getItem("stage1Progress") || "{}");
+    p.s2 = true;   // مرحله بعدی آزاد می‌شود
+    localStorage.setItem("stage1Progress", JSON.stringify(p));
+}
+
+</script>
+</body>
+</html>
