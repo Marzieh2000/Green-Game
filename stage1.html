@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>مرحله ۱ – مسیر موجی</title>
+
+<style>
+  @font-face {
+    font-family: "Yekan";
+    src: local("Yekan"), local("IRYekan");
+  }
+
+  body {
+    margin: 0;
+    padding: 0;
+    font-family: Yekan, sans-serif;
+    background: url("background2.png") center/cover fixed no-repeat;
+    overflow-x: hidden;
+  }
+
+  /* لایه تاریک */
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.55);
+    backdrop-filter: blur(4px);
+  }
+
+  h1 {
+    text-align: center;
+    color: #fff;
+    margin-top: 30px;
+    font-size: 34px;
+    z-index: 20;
+    position: relative;
+  }
+
+  /* ظرف مسیر موجی */
+  .wave-container {
+    position: relative;
+    width: 100%;
+    height: 500px;
+    margin-top: 40px;
+  }
+
+  /* هر مرحله */
+  .stage {
+    position: absolute;
+    width: 140px;
+    height: 180px;
+    padding: 10px;
+    border-radius: 20px;
+    background: rgba(255,255,255,0.07);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+    text-align: center;
+    color: white;
+    cursor: pointer;
+    transition: 0.3s;
+  }
+
+  .stage img {
+    width: 100%;
+    height: 110px;
+    object-fit: cover;
+    border-radius: 14px;
+  }
+
+  .stage-title {
+    margin-top: 8px;
+    font-size: 16px;
+  }
+
+  .stage:hover:not(.locked) {
+    transform: scale(1.12);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+  }
+
+  /* حالت قفل */
+  .locked {
+    filter: grayscale(1) brightness(0.5);
+    pointer-events: none;
+  }
+
+  .locked::after {
+    content: "🔒";
+    font-size: 32px;
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255,255,255,0.9);
+    background: rgba(0,0,0,0.4);
+    border-radius: 20px;
+  }
+</style>
+</head>
+<body>
+
+<div class="overlay"></div>
+
+<div class="container">
+  <h1>🎯 سناریوهای مرحله ۱</h1>
+  <p>با انجام هر سناریو، مرحله بعدی برای شما باز می‌شود.</p>
+
+  <div class="stages">
+
+  <!-- قرار دادن ۷ مرحله بر اساس موج سینوسی -->
+  <div class="stage" id="s1" style="left:10%; top:55%;">
+    <img src="tree.png">
+    <div class="stage-title">۱. احیای درخت</div>
+  </div>
+
+  <div class="stage locked" id="s2" style="left:23%; top:20%;">
+    <img src="tree.png">
+    <div class="stage-title">۲. سناریو</div>
+  </div>
+
+  <div class="stage locked" id="s3" style="left:37%; top:70%;">
+    <img src="tree.png">
+    <div class="stage-title">۳. سناریو</div>
+  </div>
+
+  <div class="stage locked" id="s4" style="left:51%; top:30%;">
+    <img src="tree.png">
+    <div class="stage-title">۴. سناریو</div>
+  </div>
+
+  <div class="stage locked" id="s5" style="left:65%; top:75%;">
+    <img src="tree.png">
+    <div class="stage-title">۵. سناریو</div>
+  </div>
+
+  <div class="stage locked" id="s6" style="left:78%; top:35%;">
+    <img src="tree.png">
+    <div class="stage-title">۶. سناریو</div>
+  </div>
+</div>
+</div>
+
+<script>
+  // خواندن پیشرفت قبلی
+ let p = JSON.parse(localStorage.getItem("stage1Progress") || "{}");
+
+// اگر کلیدها وجود ندارند، مقدار اولیه بده
+if (p.s1 === undefined) p.s1 = true;
+if (p.s2 === undefined) p.s2 = false;
+if (p.s3 === undefined) p.s3 = false;
+if (p.s4 === undefined) p.s4 = false;
+if (p.s5 === undefined) p.s5 = false;
+if (p.s6 === undefined) p.s6 = false;
+
+
+  function applyLocks(){
+    for(let i=1; i<=6; i++){
+      const el = document.getElementById("s"+i);
+      if(!p["s"+i]) el.classList.add("locked");
+      else el.classList.remove("locked");
+    }
+  }
+
+  applyLocks();
+
+  // لینک‌دهی مراحل
+  document.getElementById("s1").onclick = () => window.location.href="stage1-1.html";
+  document.getElementById("s2").onclick = () => window.location.href="stage1-2.html";
+  document.getElementById("s3").onclick = () => window.location.href="stage1-3.html";
+  document.getElementById("s4").onclick = () => window.location.href="stage1-4.html";
+  document.getElementById("s5").onclick = () => window.location.href="stage1-5.html";
+  document.getElementById("s6").onclick = () => window.location.href="stage1-6.html";
+</script>
+
+</body>
+</html>
