@@ -1,0 +1,732 @@
+3<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>مأموریت 6 – تفکیک پسماندهای تر و خشک | پردیس سبز</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;600;700&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<script src="game-core.js"></script>
+<style>
+  @font-face {
+    font-family: 'Yekan';
+    src: local('Yekan'), local('IRYekan');
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: Yekan, sans-serif;
+    background: #0f172a;
+    overflow-x: hidden;
+    direction: rtl;
+    color: #fff;
+  }
+
+  /* پس‌زمینه */
+  #bg {
+    position: fixed;
+    inset: 0;
+    background: url('garbage.png') center/cover no-repeat;
+    z-index: -2;
+  }
+
+  #overlay {
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(circle at top, #0008, #000e);
+    z-index: -1;
+  }
+
+  
+  .top-bar {
+    padding: 14px 24px 4px;
+    font-size: 22px;
+    font-weight: bold;
+    text-align: center;
+  }
+
+  .play-area {
+    height: calc(100vh - 290px);
+    display: flex;
+    justify-content: center;
+    gap: 70px;
+    align-items: center;
+  }
+
+  .bin {
+    width: 260px;
+    height: 336px;   
+    background: #1e293bcc;
+    padding: 10px;
+    border-radius: 22px;
+    border: 2px solid #334155;
+    text-align: center;
+    box-shadow: 0 12px 30px #0009;
+  }
+
+  .bin.safe { border-color: #22c55e; }
+  .bin.dry  { border-color: #3b82f6; }
+
+.bin.safe img {
+  height: 290px;
+}
+
+.bin.dry img {
+  height: 330px;
+}
+
+
+  /* نوار آیتم‌ها */
+  .items-bar {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  background: #020617ee;
+  padding: 18px;
+  border-top: 1px solid #1e293b;
+  overflow-x: auto;
+}
+
+.items-row {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  padding: 10px 5px;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+    overflow-x: auto; /* اسکرول افقی فعال */
+}
+
+
+
+  .item {
+    scroll-snap-align: start;
+  }
+
+ .item {
+  min-width: 110px;          /* قبلاً کوچیک می‌شد */
+  height: 110px;
+  padding: 6px;
+  flex-shrink: 0;            /* اجازه نمی‌ده آیتم ریز شود */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+    flex-shrink: 0; 
+}
+
+  .item.drag { opacity: .8; transform: translateY(-8px) scale(1.05); }
+
+.item img {
+  width: 100px;
+  height: 100px;
+  object-fit: contain;
+}
+
+
+  .aria-box {
+    position: fixed;
+      bottom: 180px !important;
+    left: 0;
+    right: 0;
+    margin: auto;
+    width: 90%;
+    max-width: 900px;
+    background: #1e293bcc;
+    padding: 12px 16px;
+    border-radius: 18px;
+    border: 1px solid #334155;
+    box-shadow: 0 10px 30px #000a;
+    font-size: 18px;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .aria-name { color: #38bdf8; font-weight: bold; }
+
+  .aria-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #3b82f6;
+    box-shadow: 0 0 10px #0006;
+  }
+
+  /* بازخورد بزرگ ✔️ / ❌ */
+  #feedback {
+    position: fixed;
+    top: 40%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 80px;
+    font-weight: 900;
+    text-shadow: 0 0 20px #000, 0 0 40px #000;
+    display: none;
+    z-index: 999;
+  }
+  .stars-box {
+  position: fixed;
+  top: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  z-index: 30;
+}
+
+.star {
+  width: 26px;
+  height: 26px;
+  background: url("star-off.png") center/contain no-repeat;
+  opacity: .4;
+  transition: .25s;
+}
+
+.star.active {
+  background: url("star-on.png") center/contain no-repeat;
+  opacity: 1;
+  transform: scale(1.2);
+  filter: drop-shadow(0 0 6px gold);
+}
+
+
+  /* پایان مرحله */
+  #endPanel {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: #000c;
+    align-items: center;
+    justify-content: center;
+    z-index: 30;
+  }
+
+  #endBox {
+    background: #1e293b;
+    border-radius: 20px;
+    padding: 20px;
+    text-align: center;
+    width: 320px;
+    border: 1px solid #334155;
+  }
+
+  #endBox h3 {
+    margin-top: 0;
+    margin-bottom: 10px;
+  }
+
+  #endBox button {
+    margin-top: 12px;
+    padding: 8px 18px;
+    border-radius: 999px;
+    border: none;
+    background: #22c55e;
+    color: #020617;
+    font-weight: bold;
+    cursor: pointer;
+  }
+
+  #endBox button:hover {
+    transform: translateY(-1px);
+  }
+  /* متن داخل باکس آریا – درشت‌تر و خواناتر */
+.aria-text {
+  font-family: "Nunito", sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.9;
+  color: #ffffff;
+}
+@media screen and (orientation: landscape) {
+  
+  .play-area {
+    height: 60vh;
+    flex-direction: row;
+    gap: 30px;
+  }
+
+.items-bar {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  padding: 22px 18px;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      #020617,
+      #020617 24px,
+      #020617 24px,
+      #020617 48px
+    );
+  border-top: 3px solid #334155;
+  box-shadow: inset 0 10px 20px #000a;
+  z-index: 15;
+}
+
+
+  .item {
+    min-width: 120px;
+    height: 120px;
+  }
+
+  .item img {
+    width: 110px;
+    height: 110px;
+  }
+
+  .aria-box {
+    bottom: 10px;
+    width: 85%;
+  }
+}
+.item.locked {
+  opacity: 0.4;
+  filter: grayscale(1);
+  pointer-events: none;
+}
+
+.item.active {
+  opacity: 1;
+  filter: none;
+  pointer-events: auto;
+  cursor: grab;
+}
+.item.active {
+  pointer-events: auto !important;
+  cursor: grab;
+  opacity: 1;
+  filter: none;
+}
+.items-row {
+  flex-direction: row-reverse;
+}
+.timer-box {
+    position: fixed;
+  top: 20px;
+  left: 20px;
+  transform: none;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 20px;
+  background: #020617cc;
+  border-radius: 20px;
+  border: 1px solid #334155;
+  box-shadow: 0 8px 30px #000a;
+  z-index: 40;
+}
+
+.hourglass {
+  font-size: 34px;
+  animation: flip 2s infinite linear;
+}
+
+.time-text {
+  font-family: "Nunito", sans-serif;
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+.timer-warning .time-text {
+  color: #ef4444;
+}
+
+@keyframes flip {
+  0%   { transform: rotate(0deg); }
+  50%  { transform: rotate(180deg); }
+  100% { transform: rotate(360deg); }
+}
+
+
+</style>
+</head>
+
+<body>
+
+<div id="bg"></div>
+<div id="overlay"></div>
+
+<div class="top-bar"> تفکیک پسماندهای تر و خشک</div>
+<div class="timer-box" id="timerBox">
+  <span class="hourglass">⏳</span>
+  <span class="time-text" id="timeText">01:00</span>
+</div>
+
+
+<div class="stars-box" id="starsBox">
+  <div class="star"></div><div class="star"></div><div class="star"></div>
+  <div class="star"></div><div class="star"></div>
+  <div class="star"></div><div class="star"></div><div class="star"></div>
+  <div class="star"></div><div class="star"></div>
+</div>
+
+
+<div class="play-area">
+  <div class="bin safe" data-type="wet">
+    <div class="bin-title">سطل پسماند تر</div>
+    <img src="garbageg.png">
+  </div>
+
+  <div class="bin dry" data-type="dry">
+    <div class="bin-title">سطل پسماند خشک</div>
+    <img src="garbage0.png">
+  </div>
+</div>
+
+<div class="aria-box">
+  <img src="aria.png" class="aria-avatar" alt="Aria">
+  <div>
+   <span id="ariaText" class="aria-text">
+  سعی کن پسماند ها را به درستی در سطل زباله مخصوص تفکیک کنی
+</span>
+  </div>
+</div>
+
+<div class="items-bar">
+  <div class="items-row" id="itemsRow"></div>
+</div>
+
+<!-- بازخورد بزرگ -->
+<div id="feedback"></div>
+
+<div id="endPanel">
+  <div id="endBox">
+    <h3>پایان مرحله</h3>
+    <p id="endSummary"></p>
+    <button onclick="location.reload()">شروع دوباره</button>
+    <button onclick="goHome()" style="
+  margin-top: 10px;
+  padding: 8px 18px;
+  border-radius: 999px;
+  border: none;
+  background: #3b82f6;
+  color: #fff;
+  font-weight: bold;
+  cursor: pointer;
+">بازگشت به صفحه اصلی</button>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+ 🎵 سیستم صدا با Web Audio API
+============================================================ */
+
+let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+/* صدای رها کردن کارت (Drop) */
+function sfxDrop() {
+  let o = audioCtx.createOscillator();
+  let g = audioCtx.createGain();
+
+  o.frequency.setValueAtTime(260, audioCtx.currentTime);
+  o.frequency.exponentialRampToValueAtTime(180, audioCtx.currentTime + 0.1);
+
+  g.gain.setValueAtTime(0.25, audioCtx.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.12);
+
+  o.connect(g).connect(audioCtx.destination);
+  o.start();
+  o.stop(audioCtx.currentTime + 0.14);
+}
+
+/* صدای گرفتن کارت (Grab) */
+function sfxGrab() {
+  let o = audioCtx.createOscillator();
+  let g = audioCtx.createGain();
+
+  o.type = "sine";
+  o.frequency.setValueAtTime(520, audioCtx.currentTime);
+  o.frequency.exponentialRampToValueAtTime(680, audioCtx.currentTime + 0.07);
+
+  g.gain.setValueAtTime(0.18, audioCtx.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.08);
+
+  o.connect(g).connect(audioCtx.destination);
+  o.start();
+  o.stop(audioCtx.currentTime + 0.1);
+}
+
+/* صدای انتخاب درست */
+function sfxCorrect() {
+  let o = audioCtx.createOscillator();
+  let g = audioCtx.createGain();
+
+  o.type = "triangle";
+  o.frequency.setValueAtTime(420, audioCtx.currentTime);
+  o.frequency.exponentialRampToValueAtTime(780, audioCtx.currentTime + 0.18);
+
+  g.gain.setValueAtTime(0.25, audioCtx.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.20);
+
+  o.connect(g).connect(audioCtx.destination);
+  o.start();
+  o.stop(audioCtx.currentTime + 0.22);
+}
+
+/* صدای انتخاب اشتباه */
+function sfxWrong() {
+  let o = audioCtx.createOscillator();
+  let g = audioCtx.createGain();
+
+  o.type = "square";
+  o.frequency.setValueAtTime(160, audioCtx.currentTime);
+  o.frequency.setValueAtTime(110, audioCtx.currentTime + 0.1);
+
+  g.gain.setValueAtTime(0.3, audioCtx.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
+
+  o.connect(g).connect(audioCtx.destination);
+  o.start();
+  o.stop(audioCtx.currentTime + 0.30);
+}
+
+/* صدای پایان مرحله */
+function sfxComplete() {
+  let now = audioCtx.currentTime;
+
+  function note(freq, start, duration) {
+    let osc = audioCtx.createOscillator();
+    let gain = audioCtx.createGain();
+
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(freq, now + start);
+
+    gain.gain.setValueAtTime(0.22, now + start);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + start + duration);
+
+    osc.connect(gain).connect(audioCtx.destination);
+    osc.start(now + start);
+    osc.stop(now + start + duration);
+  }
+
+  note(440, 0.00, 0.25);
+  note(660, 0.25, 0.25);
+  note(880, 0.50, 0.30);
+}
+
+/* داده‌ها */
+let items = [
+  // آیتم‌های تر
+  {img:"banana.png", type:"wet", label:"پوست موز"},
+  {img:"food.png", type:"wet", label:"غذا"},
+  {img:"leaf.png", type:"wet", label:"برگ"},
+  {img:"melon.png", type:"wet", label:"هندوانه"},
+  {img:"orange.png", type:"wet", label:"پرتقال"},
+  {img:"tomato.png", type:"wet", label:"گوجه پوسیده"},
+  {img:"apple.png", type:"wet", label:"سیب"},
+  {img:"rice2.png", type:"wet", label:"برنج"},
+  {img:"egg.png", type:"wet", label:"پوست تخم‌مرغ"},
+
+  // آیتم‌های خشک
+  {img:"wood.png", type:"dry", label:"چوب"},
+  {img:"waste_paint_can.png", type:"dry", label:"قوطی رنگ"},
+  {img:"bottle.png", type:"dry", label:"بطری پلاستیک"},
+  {img:"box.png", type:"dry", label:"مقوا"},
+  {img:"cup.png", type:"dry", label:"لیوان"},
+  {img:"plastic2.png", type:"dry", label:"کیسه"},
+  {img:"spoon.png", type:"dry", label:"قاشق یکبارمصرف"},
+  {img:"glass.png", type:"dry", label:"شیشه"},
+  {img:"newspaper.png", type:"dry", label:"روزنامه"},
+  {img:"foil.png", type:"dry", label:"فویل آلومینیوم"},
+];
+
+/* وضعیت بازی (اصلاح شده برای مرحله آخر) */
+let score = 0;                 // امتیاز نهایی (0 تا 10)
+const TARGET_SCORE = 10;       // هدف
+let gameEnded = false;         // جلوگیری از چندبار پایان دادن
+
+/* ساخت کارت‌ها */
+const row      = document.getElementById("itemsRow");
+const bins     = document.querySelectorAll(".bin");
+const stars    = Array.from(document.querySelectorAll(".star"));
+const feedback = document.getElementById("feedback");
+
+let conveyor = [...items].sort(() => Math.random() - 0.5);
+let currentItem = null;
+
+function renderConveyor() {
+  row.innerHTML = "";
+  currentItem = null;
+
+  conveyor.forEach((it, index) => {
+    const card = document.createElement("div");
+    card.className = "item locked";
+    card.dataset.type = it.type;
+    card.innerHTML = `<img src="${it.img}" alt="${it.label}" draggable="false">`;
+
+    // فقط آخرین آیتم فعال است
+    if (index === conveyor.length - 1) {
+      card.classList.remove("locked");
+      card.classList.add("active");
+      card.draggable = true;
+      currentItem = card;
+
+      card.addEventListener("dragstart", (e) => {
+        if (gameEnded) return;
+        e.dataTransfer.setData("text/plain", "item");
+        card.classList.add("drag");
+        sfxGrab();
+      });
+
+      card.addEventListener("dragend", () => {
+        card.classList.remove("drag");
+      });
+    }
+
+    row.appendChild(card);
+  });
+}
+
+/* ستاره + امتیاز (اصلاح اصلی) */
+function activateStar() {
+  if (score >= stars.length) return;   // حداکثر 10 ستاره
+  stars[score].classList.add("active"); // ستاره‌ی شماره‌ی score روشن می‌شود
+  score++;
+
+  // اگر به هدف رسید، مرحله تمام شود
+  if (score >= TARGET_SCORE) {
+    endGame(true);
+  }
+}
+
+/* بازخورد بزرگ وسط صفحه */
+function showFeedback(symbol, color) {
+  feedback.textContent = symbol;
+  feedback.style.color = color;
+  feedback.style.display = "block";
+  setTimeout(() => feedback.style.display = "none", 600);
+}
+
+/* دراپ روی سطل‌ها */
+bins.forEach(bin => {
+  bin.addEventListener("dragover", e => e.preventDefault());
+
+  bin.addEventListener("drop", () => {
+    if (gameEnded) return;
+    if (!currentItem) return;
+
+    const cType = currentItem.dataset.type;
+    const bType = bin.dataset.type;
+
+    if (cType === bType) {
+      sfxCorrect();
+      showFeedback("✔️", "#22c55e");
+
+      activateStar();     // ⭐ امتیاز + ستاره
+
+      // فقط اگر هنوز بازی تمام نشده، آیتم را حذف کن و ادامه بده
+      if (!gameEnded) {
+        conveyor.pop();
+        if (conveyor.length === 0) {
+          endGame(true);
+        } else {
+          renderConveyor();
+        }
+      }
+
+    } else {
+      sfxWrong();
+      showFeedback("❌", "#ef4444");
+      // ❌ هیچ امتیاز منفی
+      // ❌ هیچ پایان بازی
+      // ❌ آیتم حذف نمی‌شود
+    }
+  });
+});
+
+/* تایمر */
+let timeLeft = 60;
+let timerInterval = null;
+const timeText = document.getElementById("timeText");
+const timerBox = document.getElementById("timerBox");
+
+function startTimer() {
+  clearInterval(timerInterval);
+  timeLeft = 60;
+  timerBox.classList.remove("timer-warning");
+  updateTimerUI();
+
+  timerInterval = setInterval(() => {
+    if (gameEnded) {
+      clearInterval(timerInterval);
+      return;
+    }
+
+    timeLeft--;
+    updateTimerUI();
+
+    if (timeLeft <= 10) timerBox.classList.add("timer-warning");
+
+    if (timeLeft <= 0) {
+      endGame(false); // پایان زمان: مرحله تمام می‌شود (حتی اگر امتیاز کم باشد)
+    }
+  }, 1000);
+}
+
+function updateTimerUI() {
+  const m = String(Math.floor(timeLeft / 60)).padStart(2, "0");
+  const s = String(timeLeft % 60).padStart(2, "0");
+  timeText.textContent = `${m}:${s}`;
+}
+
+/* ذخیره امتیاز (مرحله آخر) */
+function saveFinalScore() {
+  // اگر کل بازی امتیاز تجمعی دارد:
+  // مثلا قبلاً "totalScore" داشته‌ای، اینجا جمع می‌زنیم:
+  const prevTotal = parseInt(localStorage.getItem("totalScore") || "0", 10);
+  localStorage.setItem("totalScore", String(prevTotal + score));
+
+  // و امتیاز همین مرحله:
+  localStorage.setItem("stage7Score", String(score));
+}
+
+/* پایان مرحله (اصلاح شده: بدون ریست) */
+function endGame(won) {
+  if (gameEnded) return;
+  gameEnded = true;
+
+  clearInterval(timerInterval);
+  saveFinalScore();
+  sfxComplete();
+
+  document.getElementById("endPanel").style.display = "flex";
+  const box = document.getElementById("endSummary");
+  const title = document.querySelector("#endBox h3");
+
+  // دکمه شروع دوباره در مرحله آخر بی‌معنی است → مخفی
+  const reloadBtn = document.querySelector('#endBox button[onclick="location.reload()"]');
+  if (reloadBtn) reloadBtn.style.display = "none";
+
+  if (won) {
+    title.textContent = "آفرین! مرحله آخر با موفقیت انجام شد 🎉";
+    box.innerHTML = `
+      امتیاز این مرحله: <b>${score}</b> از 10 ⭐<br>
+      امتیاز شما ذخیره شد ✅
+    `;
+  } else {
+    title.textContent = "زمان تمام شد ⏳";
+    box.innerHTML = `
+      زمان مرحله به پایان رسید.<br>
+      امتیاز این مرحله: <b>${score}</b> از 10 ⭐<br>
+      امتیاز شما ذخیره شد ✅
+    `;
+  }
+}
+
+/* goHome باید global باشد تا onclick کار کند */
+function goHome() {
+  window.location.href = "stage2-1.html";
+}
+
+renderConveyor();
+startTimer();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,1066 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>سناریو ۴ – دیوار حقیقت بازیافت</title>
+  <script src="game-core.js"></script>
+  <style>
+    @font-face {
+      font-family: "Yekan";
+      src: local("Yekan"), local("IRYekan");
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: Yekan, sans-serif;
+      direction: rtl;
+      background: url("wall_bg.jpg") center/cover fixed no-repeat;
+      overflow: hidden;
+    }
+
+    /* لایه تیره نرم روی پس‌زمینه */
+    .backdrop {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at top, rgba(0,0,0,0.5), rgba(0,0,0,0.9));
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .game-root {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      z-index: 1;
+    }
+
+    /* HUD بالا */
+    .top-hud {
+      position: absolute;
+      top: 10px;
+      left: 0;
+      right: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 20px;
+      z-index: 5;
+      pointer-events: none;
+    }
+
+ 
+
+
+    .progress-label {
+      margin-bottom: 3px;
+      opacity: 0.9;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 8px;
+      background: rgba(255,255,255,0.18);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg,#b8ff6a,#46ff8f);
+      border-radius: inherit;
+      transition: width 0.3s ease;
+    }
+
+    /* محوطه دیوار */
+    .wall-wrapper {
+      position: absolute;
+      top: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(1100px, 96vw);
+      height: calc(100vh - 220px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .wall-frame {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      padding: 26px 32px;
+      border-radius: 26px;
+      background:
+        linear-gradient(145deg, rgba(50,35,20,0.92), rgba(10,5,2,0.96));
+      box-shadow:
+        0 30px 60px rgba(0,0,0,0.95),
+        inset 0 0 40px rgba(0,0,0,0.9);
+      overflow: hidden;
+      pointer-events: auto;
+    }
+
+    .wall-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      border-radius: 18px;
+      padding: 18px 22px;
+      background:
+        radial-gradient(circle at top, rgba(110,90,70,0.6), rgba(20,14,10,0.95)),
+        url("brick_texture.png") center/cover;
+      box-shadow:
+        inset 0 0 40px rgba(0,0,0,0.8),
+        0 0 10px rgba(0,0,0,0.9);
+      display: flex;
+      flex-wrap: wrap;
+      align-content: flex-start;
+      gap: 18px;
+    }
+
+    .wall-frame::before {
+      /* هاله نور بالای دیوار */
+      content: "";
+      position: absolute;
+      inset: -40px -90px auto;
+      height: 120px;
+      background: radial-gradient(circle at top, rgba(255,255,255,0.15), transparent 55%);
+      pointer-events: none;
+    }
+
+    .wall-frame.shake {
+      animation: wallShake 0.38s ease-out;
+    }
+
+    @keyframes wallShake {
+      0%   { transform: translate3d(0,0,0); }
+      20%  { transform: translate3d(-6px,-2px,0); }
+      40%  { transform: translate3d(5px,3px,0); }
+      60%  { transform: translate3d(-4px,2px,0); }
+      80%  { transform: translate3d(3px,-2px,0); }
+      100% { transform: translate3d(0,0,0); }
+    }
+
+    /* تابلوها */
+    .board {
+      position: relative;
+      flex: 1 1 calc(33.33% - 18px);
+      min-width: 230px;
+      max-width: 320px;
+      height: 100px;
+      border-radius: 16px;
+      background:
+        radial-gradient(circle at top, rgba(255,255,255,0.24), transparent 60%),
+        linear-gradient(135deg,#7b4a1c,#4a2b12 45%,#3a220f);
+      box-shadow:
+        0 16px 26px rgba(0,0,0,0.9),
+        inset 0 0 0 1px rgba(255,255,255,0.18);
+      padding: 10px 12px;
+      color: #fef5e6;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      font-size: 14px;
+      line-height: 1.7;
+      transition:
+        transform 0.15s ease,
+        box-shadow 0.15s ease,
+        filter 0.15s ease,
+        background 0.15s ease,
+        opacity 0.25s ease;
+      overflow: hidden;
+    }
+
+    .board::before {
+      /* میخ‌ها */
+      content: "";
+      position: absolute;
+      top: 5px;
+      left: 22px;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: radial-gradient(circle,#f5f5f5,#b0b0b0 60%,#555);
+      box-shadow: 0 0 4px rgba(0,0,0,0.9);
+    }
+    .board::after {
+      content: "";
+      position: absolute;
+      top: 5px;
+      right: 22px;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: radial-gradient(circle,#f5f5f5,#b0b0b0 60%,#555);
+      box-shadow: 0 0 4px rgba(0,0,0,0.9);
+    }
+
+   .board-text {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.9;
+  color: #fff;
+}
+
+
+    .board:hover {
+      transform: translateY(-3px) scale(1.02);
+      box-shadow:
+        0 20px 36px rgba(0,0,0,1),
+        inset 0 0 0 1px rgba(255,255,255,0.24);
+      filter: brightness(1.05);
+    }
+
+  .board {
+  background:
+    radial-gradient(circle at top, rgba(255,255,255,0.2), transparent 55%),
+    linear-gradient(135deg,#77552d,#3a2710 55%,#241707);
+}
+
+    .board.hit-good {
+      animation: boardGoodHit 0.35s ease-out;
+      box-shadow:
+        0 0 18px rgba(183,255,155,0.8),
+        0 18px 38px rgba(0,0,0,1);
+    }
+
+    .board.hit-bad {
+      animation: boardBadHit 0.35s ease-out;
+      box-shadow:
+        0 0 18px rgba(255,150,150,0.7),
+        0 18px 38px rgba(0,0,0,1);
+      filter: brightness(0.8);
+    }
+
+    @keyframes boardGoodHit {
+      0%   { transform: translateY(0) scale(1); }
+      35%  { transform: translateY(4px) scale(0.97) rotate(-1.5deg); }
+      70%  { transform: translateY(-4px) scale(1.03) rotate(1deg); }
+      100% { transform: translateY(0) scale(1); }
+    }
+
+    @keyframes boardBadHit {
+      0%   { transform: translateX(0); }
+      20%  { transform: translateX(-5px); }
+      40%  { transform: translateX(5px); }
+      60%  { transform: translateX(-3px); }
+      80%  { transform: translateX(3px); }
+      100% { transform: translateX(0); }
+    }
+
+    .board-destroying {
+      animation: boardDestroy 0.5s ease-in forwards;
+    }
+
+    @keyframes boardDestroy {
+      0%   { transform: scale(1) translateY(0); opacity: 1; }
+      40%  { transform: scale(1.03) translateY(-6px) rotate(-2deg); opacity: 1; }
+      100% { transform: scale(0.8) translateY(26px) rotate(4deg); opacity: 0; }
+    }
+
+    .board.disabled {
+      pointer-events: none;
+      cursor: default;
+    }
+
+    /* سوراخ روی دیوار بعد از کندن تابلو */
+    .hole {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0;
+      transform: scale(0.7);
+      transition: opacity 0.4s ease, transform 0.4s ease;
+    }
+
+    .hole.visible {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    .hole::before {
+      content: "";
+      position: absolute;
+      inset: 12px;
+      border-radius: 18px;
+      background:
+        radial-gradient(circle at center,
+          rgba(15,15,15,0.9) 0%,
+          rgba(5,5,5,1) 45%,
+          rgba(0,0,0,0.9) 60%,
+          transparent 80%);
+      box-shadow:
+        inset 0 0 35px rgba(0,0,0,1),
+        0 0 30px rgba(0,0,0,0.9);
+    }
+
+    .hole::after {
+      /* ترک‌های اطراف سوراخ */
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 20% 20%, rgba(255,255,255,0.16) 0, transparent 40%),
+        radial-gradient(circle at 80% 30%, rgba(255,255,255,0.12) 0, transparent 42%),
+        radial-gradient(circle at 50% 80%, rgba(255,255,255,0.09) 0, transparent 40%);
+      mix-blend-mode: screen;
+      opacity: 0.65;
+    }
+
+    /* ذرات تخریب */
+    .chip {
+      position: absolute;
+      width: 10px;
+      height: 12px;
+      border-radius: 2px;
+      background: linear-gradient(135deg,#f1d1a7,#b07a40);
+      box-shadow: 0 0 4px rgba(0,0,0,0.8);
+      opacity: 0;
+      animation: chipFly 0.55s ease-out forwards;
+    }
+
+    @keyframes chipFly {
+      0%   { opacity: 0; transform: translate(0,0) rotate(0deg); }
+      10%  { opacity: 1; }
+      100% { opacity: 0; transform: translate(var(--dx),var(--dy)) rotate(var(--rot)); }
+    }
+
+    /* چکش */
+    .hammer {
+      position: fixed;
+      top: 120px;
+      left: calc(50% + 550px);
+      width: 150px;
+      height: 150px;
+      transform-origin: 20% 80%;
+      transform: translate(-50%,0) rotate(-18deg);
+      z-index: 10;
+      pointer-events: none;
+      filter: drop-shadow(0 12px 30px rgba(0,0,0,0.95));
+      transition: left 0.18s ease-out, top 0.18s ease-out, transform 0.18s ease-out;
+    }
+
+    .hammer img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      pointer-events: none;
+    }
+
+    .hammer-hit {
+      transform: translate(-50%,0) rotate(-50deg) scale(1.05);
+    }
+
+    /* پنل آریا پایین صفحه */
+    .aria-panel {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: 10px;
+      width: min(900px, 96vw);
+      background: rgba(0,0,0,0.82);
+      border-radius: 18px;
+      padding: 10px 14px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 10px 26px rgba(0,0,0,1);
+      z-index: 5;
+      color: #fff;
+    }
+
+    .aria-avatar {
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      overflow: hidden;
+      box-shadow: 0 0 10px rgba(0,0,0,0.9);
+      flex-shrink: 0;
+    }
+
+    .aria-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 50%;
+    }
+
+    .aria-content { flex: 1; }
+
+    .aria-name {
+      font-size: 11px;
+      opacity: 0.8;
+      color: #b8ff7d;
+      margin-bottom: 4px;
+    }
+
+  .aria-text {
+  font-family: "Nunito", sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.9;
+  color: #ffffff;
+}
+
+
+    .aria-text span.good { color: #b8ff7d; }
+    .aria-text span.bad  { color: #ffb5b5; }
+
+    /* صفحه‌ی شروع */
+    .start-overlay {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at top, rgba(0,0,0,0.7), rgba(0,0,0,0.96));
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      color: #fff;
+      z-index: 20;
+      text-align: center;
+      padding: 0 18px;
+    }
+
+    .start-title {
+      font-size: 24px;
+      margin-bottom: 10px;
+    }
+
+    .start-desc {
+      font-size: 14px;
+      max-width: 520px;
+      line-height: 1.8;
+      opacity: 0.92;
+      margin-bottom: 18px;
+    }
+
+    .btn {
+      border-radius: 999px;
+      border: none;
+      padding: 10px 22px;
+      font-size: 15px;
+      cursor: pointer;
+      box-shadow: 0 12px 22px rgba(0,0,0,0.9);
+      transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+      margin: 0 6px;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg,#b8ff6a,#46ff8f);
+      color: #072313;
+    }
+    .btn-secondary {
+      background: rgba(255,255,255,0.12);
+      color: #fff;
+    }
+    .btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 16px 28px rgba(0,0,0,1);
+    }
+    .btn:active {
+      transform: translateY(1px);
+      box-shadow: 0 7px 14px rgba(0,0,0,0.85);
+    }
+
+    /* پایان سناریو */
+    .end-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.75);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 30;
+    }
+
+    .end-modal {
+      background: rgba(0,0,0,0.92);
+      border-radius: 18px;
+      padding: 18px 22px;
+      width: min(420px, 90vw);
+      backdrop-filter: blur(18px);
+      box-shadow: 0 22px 40px rgba(0,0,0,1);
+      text-align: center;
+      color: #fff;
+       position: relative;
+  z-index: 50;
+    }
+
+    .end-title {
+      font-size: 18px;
+      margin-bottom: 8px;
+    }
+
+    .end-text {
+      font-size: 14px;
+      line-height: 1.8;
+      margin-bottom: 16px;
+      opacity: 0.96;
+    }
+
+    @media (max-width: 800px) {
+      .wall-wrapper {
+        top: 70px;
+        height: calc(100vh - 240px);
+      }
+      .board {
+        flex-basis: calc(50% - 18px);
+        min-width: 180px;
+        height: 90px;
+        font-size: 13px;
+      }
+      .hammer {
+        left: calc(70% + 300px);
+        width: 75px;
+        height: 75px;
+      }
+    }
+    .star {
+  width: 26px;
+  height: 26px;
+  background: url("star-off.png") center/contain no-repeat;
+  opacity: .4;
+  transition: .25s;
+}
+.star.active {
+  background: url("star-on.png") center/contain no-repeat;
+  opacity: 1;
+  transform: scale(1.2);
+  filter: drop-shadow(0 0 6px gold);
+}
+.stars-box {
+  position: fixed;
+  top: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  z-index: 30;
+}
+
+
+ .page-title {
+    padding: 14px 24px 4px;
+    font-size: 22px;
+    font-weight: bold;
+    text-align: center;
+      color: #fffafa;
+  }
+.timer-box {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 20px;
+  background: #000000cc;
+  border-radius: 20px;
+  border: 1px solid #ffffff33;
+  box-shadow: 0 8px 30px #000a;
+  z-index: 40;
+}
+
+.hourglass {
+  font-size: 28px;
+  animation: flip 2s infinite linear;
+}
+
+.time-text {
+  font-size: 28px;
+  font-weight: 800;
+   color: #fffafa;
+}
+
+.timer-warning .time-text {
+  color: #ef4444;
+}
+
+@keyframes flip {
+  0% { transform: rotate(0deg); }
+  50% { transform: rotate(180deg); }
+  100% { transform: rotate(360deg); }
+}
+
+
+
+    @media (max-width: 600px) {
+      .board {
+        flex-basis: 100%;
+        min-width: 0;
+      }
+      .hammer {
+        display: none; /* اگر روی موبایل اذیت می‌کند می‌توانی این را برداری */
+      }
+    }
+    .feedback-mark {
+  position: absolute;
+  font-size: 42px;
+  font-weight: bold;
+  color: white;
+  opacity: 0;
+  transform: scale(0.6);
+  animation: popMark 0.45s ease-out forwards;
+  z-index: 999;
+}
+
+@keyframes popMark {
+  0% { opacity: 0; transform: scale(0.5); }
+  60% { opacity: 1; transform: scale(1.25); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+  </style>
+</head>
+<body>
+
+<div class="backdrop"></div>
+
+<div class="game-root">
+  <!-- HUD بالا -->
+  <div class="top-hud">
+    
+   </div>
+<div class="page-title">
+ فواید بازیافت
+</div>
+<div class="stars-box" id="starsBox">
+  <div class="star"></div>
+  <div class="star"></div>
+  <div class="star"></div>
+  <div class="star"></div>
+  <div class="star"></div>
+</div>
+
+<div class="timer-box" id="timerBox">
+  <span class="hourglass">⏳</span>
+  <span class="time-text" id="timeText">01:00</span>
+</div>
+
+  <!-- دیوار -->
+  <div class="wall-wrapper">
+    <div class="wall-frame" id="wallFrame">
+      <div class="wall-inner" id="wallInner"><!-- تابلوها این‌جا با JS ساخته می‌شوند --></div>
+    </div>
+  </div>
+
+
+  <!-- چکش -->
+  <div class="hammer" id="hammer">
+    <!-- تصویر چکش را خودت جایگزین کن -->
+    <img src="hammer.png" alt="چکش">
+  </div>
+
+  <!-- پنل آریا -->
+  <div class="aria-panel">
+    <div class="aria-avatar">
+      <img src="aria.png" alt="آریا">
+    </div>
+    <div class="aria-content">
+      <div class="aria-name">آریا – راهنمای پردیس سبز</div>
+      <div class="aria-text" id="ariaText">
+        روی دیوار چند تابلو آویزان شده که بعضی‌شان فواید واقعی
+        <span class="good">بازیافت</span> را نشان می‌دهند و بعضی فقط
+        <span class="bad">شعارهای گمراه‌کننده</span> هستند. کار تو این است که
+        تابلوهای غلط را با چکش از دیوار بکنی تا دیوار حقیقت تمیز شود.
+       
+      </div>
+    </div>
+  </div>
+
+  <!-- صفحه شروع -->
+  <div class="start-overlay" id="startOverlay">
+    <div class="start-title">سناریو ۴ – دیوار حقیقت بازیافت</div>
+    <div class="start-desc">
+      به نظر تو فواید واقعی بازیافت چیست؟<br>
+      روی این دیوار هم جمله‌های درست آویزان شده‌اند و هم ادعاهای غلط و اغراق‌آمیز.
+      با ضربه‌ی چکش، تابلوهای غلط را بکن
+    </div>
+    <button class="btn btn-primary" id="btnStart">شروع بازی</button>
+  </div>
+
+<div class="end-backdrop" id="endBackdrop">
+  <div class="end-modal">
+    <h3 id="endTitle">پایان مرحله</h3>
+    <p id="endText"></p>
+    <button class="btn btn-primary" id="btnNext">مرحله بعد</button>
+  </div>
+</div>
+
+
+<script>
+  // ---------- تنظیمات کلی ----------
+  const REQUIRED_WRONG = 5; // باید 5 جمله اشتباه پیدا شود (5 ستاره)
+  const TOTAL_STARS = 5;
+const starsBox = document.getElementById("starsBox");
+
+  const ariaText = document.getElementById("ariaText");
+  const wallInner = document.getElementById("wallInner");
+  const wallFrame = document.getElementById("wallFrame");
+  const hammerEl = document.getElementById("hammer");
+  const startOverlay = document.getElementById("startOverlay");
+  const endBackdrop = document.getElementById("endBackdrop");
+  const endTitle = document.getElementById("endTitle");
+  const endText = document.getElementById("endText");
+  const btnBack = document.getElementById("btnBack");
+  const btnRetry = document.getElementById("btnRetry");
+  const btnStart = document.getElementById("btnStart");
+  const btnNext = document.getElementById("btnNext");
+  const timerBox = document.getElementById("timerBox");
+  const timeText = document.getElementById("timeText");
+const stars = Array.from(document.querySelectorAll("#starsBox .star"));
+
+
+
+
+  let starsEarned = 0;         // تعداد ستاره (0..5)
+  let gameRunning = false;
+  let gameOverFlag = false;
+  let remainingWrong = 0;      // تعداد تابلوهای غلط در این دور
+  let timeLeft = 60;
+  let timer = null;
+
+  // --- Web Audio Engine ---
+  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+  function playSimple(freqStart, freqEnd, duration, type="sine", gainVal=0.4) {
+    try {
+      if (audioCtx.state === "suspended") audioCtx.resume().catch(()=>{});
+      const o = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      o.type = type;
+      o.frequency.setValueAtTime(freqStart, audioCtx.currentTime);
+      o.frequency.exponentialRampToValueAtTime(freqEnd, audioCtx.currentTime + duration*0.7);
+      g.gain.setValueAtTime(gainVal, audioCtx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+      o.connect(g).connect(audioCtx.destination);
+      o.start();
+      o.stop(audioCtx.currentTime + duration);
+    } catch(e) {}
+  }
+
+  function playCorrect() { playSimple(420, 1200, 0.22, "triangle", 0.28); }
+  function playWrong()   { playSimple(260, 150, 0.25, "sawtooth", 0.35); }
+  function playHit() {
+    try {
+      if (audioCtx.state === "suspended") audioCtx.resume().catch(()=>{});
+      const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.07, audioCtx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i=0;i<data.length;i++) data[i] = (Math.random()*2-1) * (1 - i/data.length);
+      const src = audioCtx.createBufferSource();
+      src.buffer = buffer;
+      const g = audioCtx.createGain();
+      g.gain.setValueAtTime(0.7, audioCtx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.07);
+      src.connect(g).connect(audioCtx.destination);
+      src.start();
+    } catch(e) {}
+  }
+
+const titleEl = document.querySelector(".page-title");
+if (titleEl && starsBox) {
+  titleEl.insertAdjacentElement("afterend", starsBox);
+}
+starsBox.style.display = "flex";
+starsBox.style.justifyContent = "center";
+starsBox.style.alignItems = "center";
+starsBox.style.gap = "10px";
+starsBox.style.marginTop = "10px";
+starsBox.style.marginBottom = "10px";
+
+stars.forEach((s, i) => {
+  s.style.display = i < 5 ? "" : "none";
+});
+
+
+
+
+
+
+
+  function updateStars() {
+    stars.forEach((s, i) => s.classList.toggle("active", i < starsEarned));
+  }
+
+  function setAria(html) {
+    ariaText.innerHTML = html;
+  }
+
+  // ===================== تایمر =====================
+  function startTimer() {
+    clearInterval(timer);
+    timeLeft = 60;
+    timeText.textContent = "01:00";
+    timerBox.classList.remove("timer-warning");
+
+    timer = setInterval(() => {
+      if (!gameRunning || gameOverFlag) return;
+
+      timeLeft--;
+      const m = String(Math.floor(timeLeft / 60)).padStart(2,"0");
+      const s = String(timeLeft % 60).padStart(2,"0");
+      timeText.textContent = `${m}:${s}`;
+
+      if (timeLeft <= 10) timerBox.classList.add("timer-warning");
+      if (timeLeft <= 0) endGame(false);
+    }, 1000);
+  }
+
+  // ---------- داده تابلوها ----------
+  const boardsData = [
+    // درست
+    { text:"صرفه جویی در هزینه و زمان مدیریت زباله توسط شهرداری", correct:true },
+    { text:"کاهش حجم پسماندهای راهیِ محل دفن و سوزاندن", correct:true },
+    { text:"کاهش آلودگی محیط زیست", correct:true },
+    { text:"کاهش تعداد زباله گرد ها", correct:true },
+    { text:"کاهش تولید زباله", correct:true },
+    { text:"درآمدزایی برای شهروندان", correct:true },
+    { text:"کاهش محل های دفن زباله", correct:true },
+
+    // غلط / اغراق‌آمیز
+    { text:"بازیافت، مصرف بی‌رویه را توجیه می‌کند", correct:false },
+    { text:"فرایند بازیافت بدون مصرف انرژی و آلودگی است", correct:false },
+    { text:"با بازیافت نیازی به کاهش تولید زباله نیست", correct:false },
+    { text:"همه زباله‌ها همیشه قابل بازیافت‌اند", correct:false },
+    { text:"بازیافت باعث افزایش زباله‌سوزی می‌شود", correct:false },
+    { text:"باعث افزایش زباله‌سوزی در شهر می‌شود", correct:false },
+    { text:"بازیافت همیشه پرمصرف‌تر از تولید اولیه است", correct:false },
+    { text:"بازیافت به‌تنهایی همه مشکلات محیط‌زیستی را حل می‌کند", correct:false },
+  ];
+
+  function shuffle(arr) {
+    const a = arr.slice();
+    for (let i = a.length-1; i>0; i--) {
+      const j = Math.floor(Math.random()*(i+1));
+      [a[i],a[j]] = [a[j],a[i]];
+    }
+    return a;
+  }
+
+  function buildWall() {
+    wallInner.innerHTML = "";
+
+    // 5 تا غلط + 4 تا درست → دقیقاً 9 تابلو
+    const wrongs = shuffle(boardsData.filter(b => !b.correct)).slice(0, 5);
+    const rights = shuffle(boardsData.filter(b => b.correct)).slice(0, 4);
+    const selected = shuffle([...wrongs, ...rights]);
+
+    remainingWrong = 5;
+
+    selected.forEach((b) => {
+      const board = document.createElement("div");
+      board.className = "board";
+      board.dataset.correct = b.correct ? "true" : "false";
+
+      const text = document.createElement("div");
+      text.className = "board-text";
+      text.textContent = b.text;
+
+      const hole = document.createElement("div");
+      hole.className = "hole";
+
+      board.appendChild(text);
+      board.appendChild(hole);
+      wallInner.appendChild(board);
+    });
+  }
+
+  function showCheckMark(boardEl) {
+    const mark = document.createElement("div");
+    mark.className = "feedback-mark";
+    mark.textContent = "✔️";
+    boardEl.appendChild(mark);
+    setTimeout(() => mark.remove(), 650);
+  }
+  function showXMark(boardEl) {
+    const mark = document.createElement("div");
+    mark.className = "feedback-mark";
+    mark.textContent = "✖️";
+    boardEl.appendChild(mark);
+    setTimeout(() => mark.remove(), 650);
+  }
+
+  function triggerHammerOn(boardEl) {
+    if (!hammerEl) return;
+    const rect = boardEl.getBoundingClientRect();
+    const baseX = rect.left + rect.width * 0.12;
+    const baseY = rect.top - 10;
+
+    hammerEl.style.left = (baseX) + "px";
+    hammerEl.style.top = (baseY) + "px";
+
+    hammerEl.classList.remove("hammer-hit");
+    void hammerEl.offsetWidth;
+    hammerEl.classList.add("hammer-hit");
+
+    setTimeout(() => {
+      hammerEl.classList.remove("hammer-hit");
+      hammerEl.style.left = "calc(50% + 420px)";
+      hammerEl.style.top = "120px";
+    }, 230);
+  }
+
+  function spawnChips(boardEl) {
+    const rect = boardEl.getBoundingClientRect();
+    const containerRect = wallInner.getBoundingClientRect();
+
+    const baseX = rect.left - containerRect.left;
+    const baseY = rect.top - containerRect.top;
+
+    const chipsCount = 9 + Math.floor(Math.random()*5);
+    for (let i=0; i<chipsCount; i++) {
+      const chip = document.createElement("div");
+      chip.className = "chip";
+
+      const localX = baseX + rect.width/2 + (Math.random()*40 - 20);
+      const localY = baseY + rect.height/2 + (Math.random()*10 - 5);
+      chip.style.left = localX + "px";
+      chip.style.top = localY + "px";
+
+      const dx = (Math.random()*80 - 40) + "px";
+      const dy = (30 + Math.random()*40) + "px";
+      const rot = (Math.random()*140 - 70) + "deg";
+      chip.style.setProperty("--dx", dx);
+      chip.style.setProperty("--dy", dy);
+      chip.style.setProperty("--rot", rot);
+
+      wallInner.appendChild(chip);
+      setTimeout(() => chip.remove(), 600);
+    }
+  }
+
+  function showHole(boardEl) {
+    const hole = boardEl.querySelector(".hole");
+    if (!hole) return;
+    hole.classList.add("visible");
+  }
+
+  function shakeWall() {
+    wallFrame.classList.remove("shake");
+    void wallFrame.offsetWidth;
+    wallFrame.classList.add("shake");
+    setTimeout(() => wallFrame.classList.remove("shake"), 420);
+  }
+
+  function handleBoardClick(boardEl) {
+    if (!gameRunning || gameOverFlag) return;
+    if (!boardEl || boardEl.classList.contains("disabled")) return;
+
+    const isCorrectBoard = boardEl.dataset.correct === "true";
+
+    try { if (audioCtx.state === "suspended") audioCtx.resume().catch(()=>{}); } catch(e) {}
+
+    triggerHammerOn(boardEl);
+    playHit();
+
+    if (!isCorrectBoard) {
+      // صحیح: تابلو غلط
+      boardEl.classList.add("hit-good","disabled");
+      boardEl.style.backgroundColor = "rgba(0,255,0,0.35)";
+      boardEl.style.border = "2px solid rgba(0,255,0,0.85)";
+      boardEl.style.boxShadow = "0 0 14px rgba(0,255,0,0.85)";
+      showCheckMark(boardEl);
+
+      playCorrect();
+      shakeWall();
+      spawnChips(boardEl);
+      showHole(boardEl);
+      boardEl.classList.add("board-destroying");
+
+      starsEarned = Math.min(TOTAL_STARS, starsEarned + 1);
+      updateStars();
+
+      setAria(`<span class="good">آفرین!</span> این جمله یک باور اشتباه درباره‌ی بازیافت بود. `);
+
+      remainingWrong--;
+      if (remainingWrong <= 0) {
+        setTimeout(() => endGame(true), 650);
+      }
+    } else {
+      // اشتباه: تابلو درست
+      boardEl.classList.add("hit-bad");
+      boardEl.style.border = "2px solid rgba(255,0,0,0.85)";
+      boardEl.style.boxShadow = "0 0 14px rgba(255,0,0,0.85)";
+      showXMark(boardEl);
+      playWrong();
+      shakeWall();
+
+      setAria(`<span class="bad">این تابلو درست بود!</span> `);
+
+      setTimeout(() => {
+        boardEl.style.border = "";
+        boardEl.style.boxShadow = "";
+      }, 600);
+    }
+  }
+
+  function endGame() {
+  gameRunning = false;
+  gameOverFlag = true;
+  clearInterval(timer);
+
+  localStorage.setItem("stage4Stars", starsEarned);
+
+  endTitle.textContent = "پایان مرحله 🎉";
+  endText.innerHTML = `
+    امتیاز شما: <b>${starsEarned}</b> از 5 ⭐<br>
+    امتیاز ذخیره شد ✅
+  `;
+btnNext.style.display = "inline-block";
+
+  endBackdrop.style.display = "flex";
+}
+
+
+
+  function initGame() {
+    starsEarned = 0;
+    gameRunning = false;
+    gameOverFlag = false;
+    updateStars();
+    buildWall();
+
+    setAria(
+      " " +
+      "تابلوهایی را که بیش از حد اغراق‌آمیز یا کاملاً اشتباه هستند با چکش از دیوار بکن. " +
+      ""
+    );
+
+    if (btnNext) btnNext.style.display = "none";
+  }
+
+  // رویداد کلیک روی دیوار
+  wallInner.addEventListener("click", (e) => {
+    const boardEl = e.target.closest(".board");
+    if (!boardEl) return;
+    handleBoardClick(boardEl);
+  });
+
+  // شروع بازی
+  btnStart.addEventListener("click", () => {
+    startOverlay.style.display = "none";
+    gameRunning = true;
+    startTimer();
+  });
+
+  // فقط ورود به مرحله بعد با کلیک
+  if (btnNext) {
+  btnNext.onclick = () => {
+  window.location.href = "stage1-5.html";
+};
+}
+  // شروع اولیه
+  initGame();
+</script>
+
+
+</body>
+</html>

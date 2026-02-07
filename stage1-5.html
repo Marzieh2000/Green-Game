@@ -1,0 +1,1136 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>سناریو ۵ – جداسازی پسماندهای خطرناک</title>
+  <script src="game-core.js"></script>
+  <style>
+    @font-face {
+      font-family: "Yekan";
+      src: local("Yekan"), local("IRYekan");
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: Yekan, sans-serif;
+      direction: rtl;
+      background: radial-gradient(circle at top, #111827, #020617 65%);
+      overflow: hidden;
+      color: #fff;
+    }
+
+    .scene {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+
+    .factory {
+      position: relative;
+      width: min(1100px, 96vw);
+      height: min(520px, 70vh);
+      border-radius: 24px;
+      background:
+        radial-gradient(circle at top left, rgba(56,189,248,0.18), transparent 55%),
+        radial-gradient(circle at bottom right, rgba(239,68,68,0.22), transparent 55%),
+        linear-gradient(145deg, #020617 0%, #111827 45%, #020617 100%);
+      box-shadow:
+        0 32px 80px rgba(0,0,0,1),
+        inset 0 0 32px rgba(15,23,42,0.9);
+      overflow: hidden;
+      pointer-events: auto;
+      padding: 40px 40px 26px;
+    }
+
+    .factory::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 30% 0%, rgba(96,165,250,0.18), transparent 55%),
+        radial-gradient(circle at 80% 100%, rgba(248,250,252,0.08), transparent 50%);
+      pointer-events: none;
+    }
+
+    .top-hud {
+      position: fixed;
+      top: 10px;
+      left: 0; right: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 18px;
+      z-index: 20;
+      pointer-events: none;
+    }
+
+    .score-pill {
+      pointer-events: auto;
+      padding: 6px 14px;
+      border-radius: 999px;
+      background: rgba(0,0,0,0.7);
+      border: 1px solid rgba(148,163,184,0.4);
+      color: #fff;
+      font-size: 14px;
+      box-shadow: 0 8px 18px rgba(0,0,0,0.8);
+        display: none !important;
+    }
+
+   
+.hazard-bin {
+  outline: 2px solid red;
+  z-index: 10;
+}
+
+    .progress-label {
+      margin-bottom: 3px;
+      opacity: 0.9;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 8px;
+      background: rgba(148,163,184,0.25);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg,#f97316,#facc15,#22c55e);
+      border-radius: inherit;
+      transition: width 0.25s ease;
+    }
+    .hourglass {
+  font-size: 34px;
+  animation: flip 2s infinite linear;
+}
+
+.time-text {
+  font-size: 34px;
+  font-weight: 800;
+}
+
+.timer-warning .time-text {
+  color: #ef4444;
+}
+.star.active {
+  background: url("star-on.png") center/contain no-repeat;
+  opacity: 1;
+  transform: scale(1.2);
+  filter: drop-shadow(0 0 6px gold);
+}
+
+.top-title {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 20px;
+  font-weight: bold;
+  color: #fff;
+  z-index: 50;
+}
+
+    .aria-panel {
+      position: fixed;
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: 10px;
+      width: min(640px, 96vw);
+      background: rgba(15,23,42,0.92);
+      border-radius: 18px;
+      padding: 10px 14px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 10px 24px rgba(0,0,0,0.9);
+      z-index: 20;
+      color: #fff;
+    }
+
+    .aria-avatar {
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      overflow: hidden;
+      box-shadow: 0 0 10px rgba(0,0,0,0.8);
+      flex-shrink: 0;
+    }
+
+    .aria-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 50%;
+    }
+.timer-box {
+    position: fixed;
+  top: 20px;
+  left: 20px;
+  transform: none;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 20px;
+  background: #020617cc;
+  border-radius: 20px;
+  border: 1px solid #334155;
+  box-shadow: 0 8px 30px #000a;
+  z-index: 40;
+}
+    .aria-content { flex: 1; }
+
+    .aria-name {
+      font-size: 13px;
+      opacity: 0.9;
+      color: #bbf7d0;
+      margin-bottom: 4px;
+    }
+.aria-text {
+  font-family: "Nunito", sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.9;
+  color: #ffffff;
+}
+
+
+    .aria-text span.good { color: #bbf7d0; }
+    .aria-text span.bad  { color: #fecaca; }
+     .stars-box {
+  position: fixed;
+  top: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  z-index: 30;
+}
+
+.star {
+  width: 26px;
+  height: 26px;
+  background: url("star-off.png") center/contain no-repeat;
+  opacity: .4;
+  transition: .25s;
+}
+
+    .start-overlay {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at top, rgba(0,0,0,0.78), rgba(0,0,0,0.96));
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      color: #fff;
+      z-index: 30;
+      text-align: center;
+      padding: 0 16px;
+    }
+
+    .start-title {
+      font-size: 24px;
+      margin-bottom: 10px;
+    }
+
+    .start-desc {
+      font-size: 14px;
+      max-width: 520px;
+      line-height: 1.8;
+      opacity: 0.95;
+      margin-bottom: 18px;
+    }
+
+    .btn {
+      border-radius: 999px;
+      border: none;
+      padding: 9px 20px;
+      font-size: 15px;
+      cursor: pointer;
+      box-shadow: 0 12px 22px rgba(0,0,0,0.9);
+      transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease, opacity 0.18s ease;
+      margin: 0 6px;
+    }
+    .hazard-bin {
+  pointer-events: auto;
+}
+
+    .btn-primary {
+      background: linear-gradient(135deg,#4ade80,#22c55e);
+      color: #052e16;
+    }
+    .btn-secondary {
+      background: rgba(148,163,184,0.25);
+      color: #e5e7eb;
+    }
+    .btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 16px 28px rgba(0,0,0,1);
+    }
+    .btn:active {
+      transform: translateY(1px);
+      box-shadow: 0 7px 14px rgba(0,0,0,0.85);
+    }
+
+    .end-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.8);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 40;
+    }
+
+    .end-modal {
+      background: rgba(15,23,42,0.96);
+      border-radius: 18px;
+      padding: 18px 22px;
+      width: min(380px, 90vw);
+      backdrop-filter: blur(18px);
+      box-shadow: 0 22px 40px rgba(0,0,0,1);
+      text-align: center;
+      color: #fff;
+      border: 1px solid rgba(148,163,184,0.5);
+    }
+
+    .end-title {
+      font-size: 18px;
+      margin-bottom: 8px;
+    }
+
+    .end-text {
+      font-size: 14px;
+      line-height: 1.8;
+      margin-bottom: 16px;
+      opacity: 0.95;
+    }
+
+    .belt-wrap {
+      position: relative;
+      width: 100%;
+      height: 230px;
+      margin-top: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .belt-body {
+      position: relative;
+      width: 100%;
+      height: 200px;
+      background: linear-gradient(180deg,#020617,#020617 35%,#111827 80%,#020617);
+      border-radius: 999px;
+      box-shadow:
+        0 18px 30px rgba(0,0,0,0.95),
+        inset 0 0 10px rgba(15,23,42,0.9);
+      overflow: visible;
+    }
+
+    .belt-track {
+      position: absolute;
+      inset: 26px 40px 26px 40px;
+      border-radius: 999px;
+      background:
+        repeating-linear-gradient(90deg,
+          #0f172a 0 28px,
+          #1e293b 28px 32px);
+      box-shadow:
+        inset 0 3px 0 rgba(148,163,184,0.35),
+        inset 0 -3px 0 rgba(15,23,42,0.9);
+      overflow: hidden;
+    }
+
+    .belt-track::before {
+      content: "";
+      position: absolute;
+      inset: 4px 6px;
+      border-radius: 999px;
+      border: 2px dashed rgba(148,163,184,0.4);
+      opacity: 0.8;
+    }
+
+    .belt-rollers {
+      position: absolute;
+      left: 18px;
+      right: 18px;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      justify-content: space-between;
+      pointer-events: none;
+    }
+
+    .roller {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%,#e5e7eb,#6b7280 40%,#020617 70%);
+      box-shadow:
+        0 10px 18px rgba(0,0,0,0.9),
+        inset 0 0 6px rgba(31,41,55,0.9);
+    }
+
+    .belt-items {
+      position: absolute;
+      inset: 0;
+      overflow: visible;
+        pointer-events: auto;
+    }
+
+    .waste {
+      position: absolute;
+      bottom: 20px;
+      width: 60px;
+        cursor: grab;
+      transform: translateX(0);
+      cursor: pointer;
+      pointer-events: auto;
+      transition: transform 0.15s ease-out;
+    }
+
+.waste:active {
+  cursor: grabbing;
+}
+    .waste img {
+      width: 100%;
+      height: auto;
+      object-fit: contain;
+    }
+
+    .waste-glow {
+      position: absolute;
+      bottom: -4px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 72px;
+      height: 14px;
+      background: radial-gradient(circle, rgba(15,23,42,0.2), transparent 70%);
+      pointer-events: none;
+    }
+
+    .waste.dangerous img {
+      filter: drop-shadow(0 12px 20px rgba(248,113,113,0.85));
+    }
+
+    .waste-picked {
+      animation: wastePicked 0.25s ease-out forwards;
+    }
+
+    @keyframes wastePicked {
+      0%   { transform: translateY(0) scale(1); opacity: 1; }
+      60%  { transform: translateY(-70px) scale(1.05); opacity: 1; }
+      100% { transform: translateY(-100px) scale(0.7); opacity: 0; }
+    }
+
+    .waste-missed-dangerous {
+      animation: wasteMissed 0.35s ease-out;
+    }
+
+    @keyframes wasteMissed {
+      0%   { filter: brightness(1); }
+      50%  { filter: brightness(2); transform: translateY(4px); }
+      100% { filter: brightness(1); }
+    }
+    @keyframes flip {
+  0%   { transform: rotate(0deg); }
+  50%  { transform: rotate(180deg); }
+  100% { transform: rotate(360deg); }
+}
+
+
+    .hazard-bin {
+      position: absolute;
+      right: -10px;
+      bottom: -6px;
+      width: 120px;
+      height: 170px;
+      border-radius: 18px 18px 10px 10px;
+      background: linear-gradient(180deg,#7f1d1d,#b91c1c 55%,#450a0a);
+      box-shadow:
+        0 16px 28px rgba(0,0,0,0.95),
+        inset 0 0 12px rgba(127,29,29,0.9);
+      overflow: hidden;
+    }
+    .safe-bin {
+  bottom: -190px; /* پایین‌تر از سطل اول */
+  background: linear-gradient(180deg,#065f46,#16a34a,#022c22);
+}
+
+
+
+.hand {
+  position: absolute;
+  top: 0;
+  left: 0;
+  font-size: 48px;
+  z-index: 25;
+  pointer-events: none;
+  user-select: none;
+  will-change: transform;
+  transition: transform 0.08s linear;
+}
+
+
+
+
+/* ✋ دست باز */
+.hand.open {
+  content: "✋";
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.6));
+}
+
+/* ✊ دست مشت */
+.hand.grab {
+  content: "✊";
+  font-size: 44px;
+  filter: drop-shadow(0 6px 12px rgba(0,0,0,0.8));
+}
+
+    .hazard-bin-top {
+      position: absolute;
+      top: -16px;
+      left: -8px;
+      right: -8px;
+      height: 24px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 50% 10%,#fecaca,#b91c1c 60%,#450a0a);
+      box-shadow:
+        0 8px 16px rgba(0,0,0,0.9);
+    }
+
+    .hazard-label {
+      position: absolute;
+      inset: 46px 16px auto 16px;
+      height: 54px;
+      border-radius: 12px;
+      background: repeating-linear-gradient(135deg,#f97316 0 8px,#facc15 8px 16px);
+      box-shadow: inset 0 0 8px rgba(124,45,18,0.9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      text-shadow: 0 2px 6px rgba(0,0,0,0.9);
+    }
+
+    .hazard-label span {
+      transform: scale(1.1);
+    }
+
+
+    .claw-finger.left {
+      left: -6px;
+      transform: rotate(25deg);
+    }
+
+    .claw-finger.right {
+      right: -6px;
+      transform: rotate(-25deg);
+    }
+/* سطل سبز بالا */
+.safe-bin {
+  bottom: -6px;
+  background: linear-gradient(180deg,#065f46,#16a34a,#022c22);
+}
+
+/* سطل قرمز پایین‌تر = محل درگ */
+#dangerBin {
+  bottom: -190px;
+}
+.page-title {
+  position: fixed;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  font-size: 20px;
+  font-weight: 800;
+   font-weight: bold;
+  color: #0a0000ff;
+  padding: 6px 16px;
+  border-radius: 999px;
+  pointer-events: none;
+}
+
+
+
+    .belt-hint {
+      position: absolute;
+      top: -24px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 11px;
+      opacity: 0.8;
+    }
+
+    .belt-hint span {
+      font-size: 16px;
+      margin-left: 2px;
+    }
+
+    @media (max-width: 720px) {
+      .factory {
+        padding: 34px 14px 18px;
+      }
+      .belt-wrap {
+        margin-top: 26px;
+      }
+      .aria-panel {
+        bottom: 6px;
+        width: 96vw;
+      }
+      .aria-text {
+        font-size: 14px;
+      }
+      #btnNext {
+  display: none;
+}
+
+    }
+  </style>
+</head>
+<body>
+
+<div class="top-hud">
+  <div class="score-pill">
+    امتیاز: <span id="scoreText">0</span> / 10
+  </div>
+
+<div class="top-hud">
+  <div class="score-pill">
+    امتیاز: <span id="scoreText">0</span> / 10
+  </div>
+
+ <div class="page-title">
+   جداسازی پسماندهای خطرناک
+</div>
+
+
+
+</div>
+<div class="timer-box" id="timerBox">
+  <span class="hourglass">⏳</span>
+  <span class="time-text" id="timeText">01:00</span>
+</div>
+
+<div class="stars-box" id="starsBox">
+  <div class="star"></div><div class="star"></div><div class="star"></div>
+  <div class="star"></div><div class="star"></div>
+  <div class="star"></div><div class="star"></div>
+  <div class="star"></div><div class="star"></div>
+  <div class="star"></div>
+</div>
+
+<div class="scene">
+  <div class="factory" id="factory">
+
+<div class="hand open" id="hand">✋</div>
+
+
+
+
+    <div class="belt-wrap">
+      <div class="belt-hint">
+        پسماندهای خطرناک <span>☣</span> را قبل از افتادن شکار کن
+      </div>
+
+      <div class="belt-body" id="beltBody">
+        <div class="belt-track" id="beltTrack">
+          <div class="belt-items" id="beltItems"></div>
+        </div>
+        <div class="belt-rollers">
+          <div class="roller"></div>
+          <div class="roller"></div>
+        </div>
+
+    <!-- سطل سبز (خودکار) -->
+<div class="hazard-bin safe-bin" id="safeBin">
+  <div class="hazard-bin-top"></div>
+  <div class="hazard-label"><span>♻️</span></div>
+</div>
+
+<!-- سطل قرمز (محل درگ کاربر) -->
+<div class="hazard-bin" id="dangerBin">
+  <div class="hazard-bin-top"></div>
+  <div class="hazard-label"><span>☣</span></div>
+</div>
+
+</div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="aria-panel">
+  <div class="aria-avatar">
+    <img src="aria.png" alt="آریا">
+  </div>
+  <div class="aria-content">
+    <div class="aria-name">آریا – راهنمای پردیس سبز</div>
+    <div class="aria-text" id="ariaText">
+     روی زباله‌های <span class="bad">خطرناک ☣</span> با دقت تمرکز کن.
+هر انتخاب درست ⭐ یک امتیاز دارد و با پایان زمان، مرحله تمام می‌شود.
+    </div>
+  </div>
+</div>
+
+<div class="start-overlay" id="startOverlay">
+  <div class="start-title">سناریو ۵ – شکار پسماندهای خطرناک</div>
+  <div class="start-desc">
+    روی نوار نقاله،  زباله‌های عادی و پسماندهای <span class="bad">خطرناک</span> حرکت می‌کنند.
+     زباله‌های خطرناک رو انتخاب و در داخل سطل پسماند مناسبش بنداز .
+    در این مرحله با جداسازی 10 زباله خطرناک میتونی امتیاز کامل رو کسب کنی.
+  </div>
+  <button class="btn btn-primary" id="btnStart">شروع بازی</button>
+</div>
+
+<div class="end-backdrop" id="endBackdrop">
+  <div class="end-modal">
+    <div class="end-title" id="endTitle">آفرین!</div>
+    <div class="end-text" id="endText"></div>
+
+    <button class="btn btn-primary" id="btnNext">مرحله بعد</button>
+
+  </div>
+</div>
+
+<script>
+/* ===================== تنظیمات ===================== */
+const TOTAL_ITEMS = 80;
+const MAX_SCORE   = 10;
+const BELT_SPEED  = 140; // سرعت حرکت زباله‌ها
+
+const beltItems    = document.getElementById("beltItems");
+const beltTrack    = document.getElementById("beltTrack");
+const scoreText    = document.getElementById("scoreText");
+const ariaText     = document.getElementById("ariaText");
+const startOverlay = document.getElementById("startOverlay");
+const endBackdrop  = document.getElementById("endBackdrop");
+const endTitle     = document.getElementById("endTitle");
+const endText      = document.getElementById("endText");
+const btnStart     = document.getElementById("btnStart");
+const btnBack      = document.getElementById("btnBack");
+const btnRetry     = document.getElementById("btnRetry");
+const timerBox     = document.getElementById("timerBox");
+const timeText     = document.getElementById("timeText");
+const factory = document.getElementById("factory"); // اینو بالا یکبار تعریف کن
+const dangerBin = document.getElementById("dangerBin");
+const safeBin   = document.getElementById("safeBin");
+const hand = document.getElementById("hand");
+hand.textContent = "✋";
+hand.classList.add("open");
+
+const handHome = { x: "50%", y: "-40px" };
+
+
+const stars = Array.from(document.querySelectorAll(".star"));
+
+/* ===================== صدا ===================== */
+
+factory.addEventListener("dragover", (e) => {
+  if (!running || gameEnded) return;
+
+  e.preventDefault();
+  const rect = factory.getBoundingClientRect();
+  mouseX = e.clientX - rect.left;
+  mouseY = e.clientY - rect.top;
+});
+
+/* ===================== صدا ===================== */
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+/* صدای موفقیت – دقیقاً مشابه سناریوی مرجع */
+function sfxSuccess() {
+  if (audioCtx.state === "suspended") audioCtx.resume().catch(()=>{});
+  const now = audioCtx.currentTime;
+
+  function note(freq, start, dur) {
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.type = "sine";
+    o.frequency.setValueAtTime(freq, now + start);
+    g.gain.setValueAtTime(0.22, now + start);
+    g.gain.exponentialRampToValueAtTime(0.0001, now + start + dur);
+    o.connect(g).connect(audioCtx.destination);
+    o.start(now + start);
+    o.stop(now + start + dur);
+  }
+
+  note(440, 0.00, 0.22);
+  note(660, 0.22, 0.22);
+  note(880, 0.44, 0.28);
+}
+
+/* صدای خطا (هشدار کوتاه، بدون تنبیه) */
+function playBad() {
+  if (audioCtx.state === "suspended") audioCtx.resume().catch(()=>{});
+  const o = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  o.type = "square";
+  o.frequency.setValueAtTime(160, audioCtx.currentTime);
+  g.gain.setValueAtTime(0.28, audioCtx.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.22);
+  o.connect(g).connect(audioCtx.destination);
+  o.start();
+  o.stop(audioCtx.currentTime + 0.24);
+}
+
+
+/* ===================== داده‌ها ===================== */
+const wasteCatalog = [
+  { img:"battrey.png", dangerous:true },
+  { img:"waste_paint_can.png", dangerous:true },
+  { img:"waste_chemical_bottle.png", dangerous:true },
+  { img:"lamp.png", dangerous:true },
+  { img:"medical.png", dangerous:true },
+  { img:"oil2.png", dangerous:true },
+  { img:"spray.png", dangerous:true },
+
+  { img:"banana.png", dangerous:false },
+  { img:"letter.png", dangerous:false },
+  { img:"box.png", dangerous:false },
+  { img:"leaf.png", dangerous:false },
+  { img:"food.png", dangerous:false },
+  { img:"cup.png", dangerous:false }
+];
+
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i=a.length-1; i>0; i--) {
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function buildItemList() {
+  const out = [];
+  while (out.length < TOTAL_ITEMS) out.push(...shuffle(wasteCatalog));
+  return out.slice(0, TOTAL_ITEMS);
+}
+
+/* ===================== وضعیت بازی ===================== */
+let items = [];
+let score = 0;
+let gameEnded = false;
+let running = false;
+
+let timeLeft = 60;
+let timer = null;
+
+let lastTime = null;
+let draggingId = null; // id آیتمی که الان درگ می‌شود
+let draggingItem = null;
+let mouseX = 0;
+let mouseY = 0;
+
+/* ===================== UI ===================== */
+function setAria(html) { ariaText.innerHTML = html; }
+
+function setScore(newScore) {
+  score = Math.min(MAX_SCORE, newScore);
+  scoreText.textContent = score;
+
+  stars.forEach((s, i) => s.classList.toggle("active", i < score));
+
+  // ✅ فقط وقتی 10 تا شد (قبل از تایم) → مرحله بعد
+  if (score >= MAX_SCORE) {
+    endGame("win");
+  }
+}
+
+
+/* ===================== ساخت آیتم‌ها ===================== */
+function buildItems() {
+  beltItems.innerHTML = "";
+  items = [];
+  setScore(0);
+  gameEnded = false;
+  draggingId = null;
+  timerBox.classList.remove("timer-warning");
+
+  const list = buildItemList();
+
+  // شروع از بیرون سمت چپ (برای حرکت طبیعی)
+  const startX = -220;
+  const spacing = 170;
+
+  list.forEach((data, i) => {
+    const el = document.createElement("div");
+    el.className = "waste" + (data.dangerous ? " dangerous" : "");
+    el.draggable = true;
+
+    const img = document.createElement("img");
+    img.src = data.img;
+    el.appendChild(img);
+
+    // توجه: اینجا از left استفاده می‌کنیم (نه transform)، تا هم حرکت و هم drag قاطی نشود
+    const x = startX - i * spacing;
+    el.style.left = `${x}px`;
+    el.style.bottom = "20px";
+
+    const id = String(i);
+    el.dataset.id = id;
+
+    // drag events
+el.addEventListener("dragstart", (e) => {
+  if (!running || gameEnded) {
+    e.preventDefault();
+    return;
+  }
+
+  draggingId = id;
+  draggingItem = items.find(x => x.id === id);
+
+  e.dataTransfer.setData("text/plain", id);
+  el.style.opacity = "0.55";
+
+  hand.textContent = "✊";
+  hand.classList.remove("open");
+  hand.classList.add("grab");
+});
+
+el.addEventListener("dragend", () => {
+  draggingItem = null;
+  draggingId = null;
+  resetHand();
+});
+
+
+
+    beltItems.appendChild(el);
+
+    items.push({
+      id,
+      el,
+      x,
+      dangerous: data.dangerous,
+      processed: false
+    });
+  });
+
+  setAria("✅ بازی آماده است. زباله‌های خطرناک رو بکش داخل سطل درست.");
+}
+
+/* ===================== حرکت نوار ===================== */
+function update(dt) {
+  const trackWidth = beltTrack.getBoundingClientRect().width;
+  const exitX = trackWidth + 140;
+
+  for (const it of items) {
+    if (it.processed) continue;
+
+    // اگر همین آیتم در حال drag است، حرکتش متوقف شود
+    if (draggingId === it.id) continue;
+
+    it.x += BELT_SPEED * dt;
+    it.el.style.left = `${it.x}px`;
+
+if (it.x > exitX) {
+  it.processed = true;
+  it.el.remove();
+
+  if (it.dangerous && !gameEnded) {
+    // فقط هشدار آموزشی
+    setAria(
+      "<span class='bad'>یک پسماند خطرناک از نوار عبور کرد.</span><br>" +
+      "در دنیای واقعی این یعنی آلودگی محیط."
+    );
+  }
+}
+
+  }
+}
+
+function loop(t) {
+  if (!lastTime) lastTime = t;
+  const dt = (t - lastTime) / 1000;
+  lastTime = t;
+if (draggingItem) {
+  followItem();
+}
+
+
+  if (running && !gameEnded) update(dt);
+
+  requestAnimationFrame(loop);
+}
+
+
+function followItem() {
+  const offsetX = 0;
+  const offsetY = -55; // دست کمی بالاتر از موس
+
+  hand.style.transform =
+    `translate(${mouseX + offsetX}px, ${mouseY + offsetY}px)`;
+}
+
+
+
+function resetHand() {
+  hand.style.transform = "translate(520px, 40px)"; // یه جای ثابت داخل factory
+  hand.textContent = "✋";
+  hand.classList.remove("grab");
+  hand.classList.add("open");
+}
+
+
+
+
+/* ===================== Drop Logic (دو سطل) ===================== */
+function wireBin(binEl) {
+  binEl.addEventListener("dragover", (e) => {
+    if (!running || gameEnded) return;
+    e.preventDefault();
+  });
+
+  binEl.addEventListener("drop", (e) => {
+    e.preventDefault();
+    if (!running || gameEnded) return;
+
+    const id = e.dataTransfer.getData("text/plain");
+    const it = items.find(x => x.id === id);
+    if (!it || it.processed) return;
+  const binRect = binEl.getBoundingClientRect();
+const factoryRect = factory.getBoundingClientRect();
+
+const binX = binRect.left - factoryRect.left + binRect.width / 2;
+const binY = binRect.top  - factoryRect.top  + 10;
+
+hand.style.transform = `translate(${binX}px, ${binY}px)`;
+
+
+setTimeout(() => {
+  resetHand();
+  draggingItem = null;
+  draggingId = null;
+}, 160);
+
+
+
+    it.processed = true;
+    it.el.remove();
+    resetHand();
+
+    if (it.dangerous) {
+      // ✅ تنها حالت امتیاز گرفتن
+  sfxSuccess();
+      setScore(score + 1);
+      setAria("<span class='good'>عالی! پسماند خطرناک مهار شد.</span>");
+    } else {
+      // ❌ اشتباه ولی بدون جریمه
+      playBad();
+      setAria("<span class='bad'>این زباله خطرناک نبود.</span>");
+    }
+  });
+}
+
+
+wireBin(dangerBin, true);  // ☣️ خطرناک
+
+/* ===================== تایمر ===================== */
+function startTimer() {
+  clearInterval(timer);
+  timeLeft = 60;
+  timeText.textContent = "01:00";
+  timerBox.classList.remove("timer-warning");
+
+  timer = setInterval(() => {
+    if (!running || gameEnded) return;
+
+    timeLeft--;
+    const m = String(Math.floor(timeLeft / 60)).padStart(2, "0");
+    const s = String(timeLeft % 60).padStart(2, "0");
+    timeText.textContent = `${m}:${s}`;
+
+    if (timeLeft <= 10) timerBox.classList.add("timer-warning");
+
+    if (timeLeft <= 0) {
+      endGame("time");
+    }
+  }, 1000);
+}
+
+
+/* ===================== پایان بازی ===================== */
+function saveStageScore() {
+  // امتیاز همین مرحله
+  localStorage.setItem("stage5Score", String(score));
+
+  // امتیاز کل بازی
+  const prevTotal = parseInt(localStorage.getItem("totalScore") || "0", 10);
+  localStorage.setItem("totalScore", String(prevTotal + score));
+}
+
+function endGame(reason) {
+  if (gameEnded) return;
+  gameEnded = true;
+  running = false;
+  clearInterval(timer);
+
+  // ✅ ذخیره امتیاز
+  saveStageScore();
+
+  // متن پایان
+  if (reason === "win") {
+    endTitle.textContent = "آفرین! ✅";
+    endText.innerHTML = `۱۰ پسماند خطرناک رو قبل از پایان زمان جمع کردی!<br>
+    امتیاز این مرحله: <b>${score}</b> از 10 ⭐<br>
+    امتیاز ذخیره شد ✅<br>
+    در حال رفتن به مرحله بعد...`;
+  } else {
+    endTitle.textContent = "زمان تمام شد ⏳";
+   endText.innerHTML = `
+  امتیاز این مرحله: <b>${score}</b> از 10 ⭐<br>
+  امتیاز ذخیره شد ✅<br>
+  برای ادامه، دکمه «مرحله بعد» را بزن
+`;
+  }
+
+  endBackdrop.style.display = "flex";
+
+
+document.getElementById("btnNext").style.display = "inline-block";
+
+  
+}
+
+
+
+/* ===================== کنترل‌ها ===================== */
+btnStart.onclick = () => {
+  startOverlay.style.display = "none";
+  buildItems();
+  running = true;
+  lastTime = null;
+  startTimer();
+};
+
+
+const btnNext = document.getElementById("btnNext");
+
+btnNext.onclick = () => {
+  window.location.href = "stage1-6.html";
+};
+
+
+/* ===================== init ===================== */
+buildItems();
+requestAnimationFrame(loop);
+</script>
+
+</body>
+</html>
