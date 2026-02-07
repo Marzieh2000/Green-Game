@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>پردیس سبز </title>
+
+<style>
+  @font-face {
+    font-family: "Yekan";
+    src: local("Yekan"), local("IRYekan");
+  }
+
+  body {
+    margin: 0;
+    overflow: hidden;
+    font-family: Yekan, sans-serif;
+  }
+
+  /* پس‌زمینه اصلی */
+  #bg {
+    position: fixed;
+    inset: 0;
+    background: url("Background7.png") no-repeat center;
+    background-size: cover;
+    transform: scale(1.1);
+    filter: brightness(1.1) saturate(1.2);
+    animation: bgZoom 18s ease-in-out alternate infinite;
+  }
+
+  @keyframes bgZoom {
+    from { transform: scale(1.08); }
+    to   { transform: scale(1.12); }
+  }
+  
+  
+
+  /* مه متحرک */
+  #fog {
+  position: fixed;
+  inset: 0;
+  background: url("fog1.png") repeat-x center;
+  background-size: cover;
+  opacity: 0.3;
+  animation: fogMove 35s linear infinite;
+  z-index: 5;
+}
+  @keyframes fogMove {
+    from { transform: translateX(-10%); }
+    to   { transform: translateX(10%); }
+  }
+
+  /* برگ‌های در حال سقوط */
+  .leaf {
+    position: fixed;
+    top: -100px;
+    width: 30px;
+    height: 30px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    pointer-events: none;
+    opacity: 0.9;
+    animation: fall linear infinite;
+  }
+
+  @keyframes fall {
+    0%   { transform: translateY(-100px) rotate(0deg); }
+    100% { transform: translateY(120vh) rotate(360deg); }
+  }
+
+  /* محتوای جلویی */
+  #content {
+    position: fixed;
+    top: 35%;
+    width: 100%;
+    text-align: center;
+    color: white;
+    text-shadow: 0 3px 8px rgba(0,0,0,0.7);
+    z-index: 10;
+  }
+
+  #title {
+    font-size: 48px;
+    margin-bottom: 20px;
+    animation: fadeIn 2s ease forwards, glow 3s ease-in-out infinite alternate;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  @keyframes glow {
+    from { text-shadow: 0 0 10px rgba(255,255,255,0.4); }
+    to   { text-shadow: 0 0 20px rgba(255,255,255,0.9); }
+  }
+  
+
+
+  .house:hover {
+    transform: scale(1.15);
+  }
+
+  /* حالت قفل */
+  .locked {
+    filter: grayscale(1) brightness(0.6);
+    pointer-events: none;
+  }
+
+  /* دکمه‌ها */
+  .btn {
+    padding: 14px 40px;
+    margin: 10px;
+    font-size: 20px;
+    border: none;
+    border-radius: 50px;
+    background: rgba(255, 224, 140, 0.9);
+    color: #3b2f00;
+    cursor: pointer;
+    backdrop-filter: blur(4px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+    transition: 0.2s;
+  }
+
+  .btn:hover {
+    transform: scale(1.08);
+    background: rgba(255, 212, 100, 1);
+  }
+  #houses {
+  position: relative;
+  width: 100%;
+  height: 400px;
+  margin-top: 60px;
+}
+
+.house {
+  position: absolute;
+  width: 300px;
+  height: auto;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.house:hover {
+  transform: scale(1.15);
+}
+
+/* جایگذاری خانه‌ها — خودت می‌تونی تغییر بدی */
+#level1 { left: 20%; top: 40px; }
+#level2 { left: 45%; top: 180px; }
+#level3 { left: 70%; top: 60px; }
+
+
+</style>
+</head>
+
+<body>
+
+<div id="bg"></div>
+<div id="fog"></div>
+
+<!-- برگ‌های رندوم -->
+<script>
+  const leafImages = [
+    "leaf.png",
+    "leaf2.png",
+    "leaf3.png"
+  ];
+
+  for (let i = 0; i < 20; i++) {
+    let leaf = document.createElement("div");
+    leaf.classList.add("leaf");
+    leaf.style.left = Math.random()*100 + "vw";
+    leaf.style.animationDuration = (10 + Math.random()*20) + "s";
+    leaf.style.backgroundImage = `url('${leafImages[Math.floor(Math.random()*leafImages.length)]}')`;
+    document.body.appendChild(leaf);
+  }
+
+</script>
+
+<!-- محتوای صفحه -->
+<div id="content">
+  <div id="title">🌳 پردیس سبز </div>
+  <!-- آیکون خانه‌ها -->
+<img src="house6.png" id="h1" class="house" style="left: 15%; top: 80%;">
+<img src="house5.png" id="h2" class="house" style="left: 47%; top: 84%;">
+<img src="house.png" id="h3" class="house" style="left:69%; top:35%;">
+
+
+<!-- صداها -->
+<audio id="bgSound" src="nature.mp3" loop></audio>
+<audio id="clickSound" src="click.mp3"></audio>
+
+</div>
+
+
+<script>
+/* برگ‌ها */
+const leaves = ["leaf.png", "leaf2.png", "leaf3.png"];
+for (let i = 0; i < 25; i++) {
+  let leaf = document.createElement("div");
+  leaf.classList.add("leaf");
+  leaf.style.left = Math.random()*100 + "vw";
+  leaf.style.animationDuration = (10 + Math.random()*20) + "s";
+  leaf.style.backgroundImage = `url(${leaves[Math.floor(Math.random()*leaves.length)]})`;
+  document.body.appendChild(leaf);
+}
+
+/* اجازه پخش صدا پس از اولین کلیک */
+document.body.addEventListener("click", () => {
+  const bg = document.getElementById("bgSound");
+  if (bg.paused) bg.play();
+}, { once: true });
+
+/* سیستم مرحله‌ها با LocalStorage */
+let progress = JSON.parse(localStorage.getItem("progress")) || {
+  stage1: true,
+  stage2: false,
+  stage3: false
+};
+
+function saveProgress() {
+  localStorage.setItem("progress", JSON.stringify(progress));
+}
+
+/* اعمال قفل */
+if (!progress.stage2) document.getElementById("h2").classList.add("locked");
+if (!progress.stage3) document.getElementById("h3").classList.add("locked");
+
+/* صدای کلیک */
+function playClick() {
+  const s = document.getElementById("clickSound");
+  s.currentTime = 0;
+  s.play();
+}
+
+/* رفتار خانه‌ها */
+document.getElementById("h1").onclick = () => {
+  playClick();
+  setTimeout(()=> window.location.href = "stage1.html", 200);
+};
+
+document.getElementById("h2").onclick = () => {
+  playClick();
+  setTimeout(()=> window.location.href = "stage2.html", 200);
+};
+
+document.getElementById("h3").onclick = () => {
+  playClick();
+  setTimeout(()=> window.location.href = "stage3.html", 200);
+};
+</script>
+</body>
+</html>
